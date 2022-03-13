@@ -10,7 +10,7 @@ list(APPEND includes
 
 list(APPEND srsc
     "code_timer/code_timer.c"
-    "ringbuffer/ringbuffer.c"
+    "circular_buffer/circular_buffer.c"
     "sig_gen/sig_gen.c"
     "test_buffer/test_buffer.c"
 )

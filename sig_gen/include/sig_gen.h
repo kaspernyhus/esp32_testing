@@ -12,6 +12,7 @@ typedef struct
 {
     uint8_t ch_fmt;
     uint8_t bytes_per_sample;
+    uint16_t sample_rate;
 } sig_gen_t;
 
 

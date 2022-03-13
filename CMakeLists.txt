@@ -3,7 +3,7 @@ set(includes)
 
 list(APPEND includes
     "code_timer/include"
-    "ringbuffer/include"
+    "circular_buffer/include"
     "sig_gen/include"
     "test_buffer/include"
 )

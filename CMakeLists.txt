@@ -12,6 +12,7 @@ list(APPEND srsc
     "code_timer/code_timer.c"
     "circular_buffer/circular_buffer.c"
     "sig_gen/sig_gen.c"
+    "sig_gen/sine.c"
     "test_buffer/test_buffer.c"
 )
 

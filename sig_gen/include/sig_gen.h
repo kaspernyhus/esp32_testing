@@ -19,3 +19,4 @@ typedef struct
 void sig_gen_init(sig_gen_t *sg, uint8_t ch_fmt);
 void sig_gen_output(sig_gen_t *sg, void *out_data, size_t samples);
 
+void sig_gen_get_sample(sig_gen_t *sg, void *out_data, size_t samples);

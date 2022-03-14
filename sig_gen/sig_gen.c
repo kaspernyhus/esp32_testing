@@ -19,3 +19,9 @@ void sig_gen_output(sig_gen_t *sg, void *out_data, size_t samples)
         get_samples_from_LUT(out_data,samples);
     }
 }
+
+
+void sig_gen_get_sample(sig_gen_t *sg, void *out_data, size_t samples)
+{
+    
+}

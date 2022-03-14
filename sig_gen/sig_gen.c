@@ -9,14 +9,14 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
 {
     sg->bytes_per_sample = cfg->bytes_per_sample;
     sg->sample_rate = cfg->sample_rate;
-    sg->_amplitude = (pow(2,cfg->bytes_per_sample*8)/2)-1 * cfg->amplitude;
+    sg->_amplitude = ((pow(2,cfg->bytes_per_sample*8)/2)-1) * cfg->amplitude;
     sg->_freq = cfg->freq;
     sg->_deltaTime = (1.0 / cfg->sample_rate);
     sg->_phase = cfg->phase;
     sg->_time = 0.0;
     sg->_double_pi = 2.0*M_PI;
 
-    ESP_LOGI("sigGen","Signal Generator Initialized. sampleRate:%d, ampl:%f, freq:%f, deltaT:%f, phase:%f, dPI:%f", sg->sample_rate,sg->_amplitude,sg->_freq,sg->_deltaTime,sg->_phase,sg->_double_pi);
+    ESP_LOGI("sigGen","Signal Generator Initialized. sampleRate:%d, ampl:%f, freq:%f, deltaT:%f, phase:%f", sg->sample_rate,sg->_amplitude,sg->_freq,sg->_deltaTime,sg->_phase);
 }
 
 

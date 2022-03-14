@@ -24,7 +24,7 @@ void test_buffer_add(test_buffer_t *tb, void *data, size_t bytes)
                 tb->is_printed = 1;        
             }
             else {
-                // ESP_LOGI("test_buffer","data saved");
+                // Add data to test buffer
                 memcpy(tb->buffer + tb->write,data,bytes);
                 tb->write += bytes;
             }

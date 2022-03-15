@@ -6,7 +6,7 @@
 
 
 /* Global */
-char *TAG = "code_timer";
+const char *CT_TAG = "code_timer";
 int timers_active = 1;
 
 
@@ -14,6 +14,7 @@ int timers_active = 1;
 void code_timer_enable_global(size_t size)
 {
     code_timer_init(&global_timer,"Global timer",size,size);
+    ESP_LOGI(CT_TAG,"Global code timer initialized");
     code_timer_enable_all();    
 }
 
@@ -21,7 +22,7 @@ void code_timer_enable_global(size_t size)
 /*
 FreeRTOS task to print the contents of the time code object buffer
 */
-void _print_task(void *arg)
+void _code_timer_print_task(void *arg)
 {
     code_timer_t *ct = (code_timer_t *)arg; // Get code_timer obj
     uint32_t last = 0;
@@ -43,7 +44,7 @@ Enable code timers
 void code_timer_enable_all(void)
 {
     timers_active = 1;
-    ESP_LOGI(TAG,"Timers activated");
+    ESP_LOGI(CT_TAG,"Timers activated");
 }
 
 /*
@@ -52,7 +53,7 @@ Disable code timers
 void code_timer_disable_all(void)
 {
     timers_active = 0;
-    ESP_LOGI(TAG,"Timers deactivated");
+    ESP_LOGI(CT_TAG,"Timers deactivated");
 }
 
 /*
@@ -85,6 +86,13 @@ void code_timer_init(code_timer_t *ct, char *timer_tag, size_t size, size_t size
     ct->size_trigger = size_trigger;
     ct->active = true;
     ct->timer_tag = timer_tag;
+}
+
+
+void code_timer_deinit(code_timer_t *ct)
+{
+    free(ct->buffer);
+    ct->buffer = NULL;
 }
 
 /*
@@ -122,6 +130,6 @@ Creates a freeRTOS task to print the timestamps
 */
 void code_timer_print_timestamps(code_timer_t *ct)
 {
-    xTaskCreatePinnedToCore(_print_task,"print",8192,ct,10,NULL,APP_CPU_NUM);
+    xTaskCreatePinnedToCore(_code_timer_print_task,"code_timer print",8192,ct,10,NULL,APP_CPU_NUM);
 }
 

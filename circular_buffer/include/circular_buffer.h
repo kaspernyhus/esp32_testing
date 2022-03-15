@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+
 
 typedef struct {
     uint8_t *buffer;

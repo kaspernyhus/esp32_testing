@@ -1,6 +1,9 @@
 #include "circular_buffer.h"
 
 
+static portMUX_TYPE spinlock = portMUX_INITIALIZER_UNLOCKED;
+
+
 void ringbuf_init(ringbuf_t *rb, uint8_t *buffer, size_t size)
 {
     rb->buffer = buffer;
@@ -19,15 +22,19 @@ void ringbuf_reset(ringbuf_t *rb)
 
 void ringbuf_write(ringbuf_t *rb, void *data, size_t bytes)
 {
+    portENTER_CRITICAL(&spinlock);
     memcpy(rb->buffer + rb->write,data,bytes);
     rb->write = (rb->write + bytes) % rb->size;
+    portEXIT_CRITICAL(&spinlock);
 }
 
 
 void ringbuf_read(ringbuf_t *rb, void *data, size_t bytes)
 {
+    portENTER_CRITICAL(&spinlock);
     memcpy(data,rb->buffer + rb->read,bytes);
     rb->read = (rb->read + bytes) % rb->size;
+    portEXIT_CRITICAL(&spinlock);
 }
 
 

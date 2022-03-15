@@ -32,6 +32,7 @@ code_timer_t global_timer;
 
 
 void code_timer_init(code_timer_t *ct, char *timer_tag, size_t size, size_t size_trigger);
+void code_timer_deinit(code_timer_t *ct);
 void code_timer_enable_all(void);
 void code_timer_disable_all(void);
 void code_timer_activate(code_timer_t *ct);

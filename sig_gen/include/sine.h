@@ -11,7 +11,9 @@ typedef enum {
     FREQ_5K3,
     FREQ_440,
     FREQ_552,
-    FREQ_60
+    FREQ_60,
+    TEST_A,
+    TEST_B
 } lut_freq_e;
 
 

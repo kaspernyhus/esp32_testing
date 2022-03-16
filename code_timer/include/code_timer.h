@@ -28,7 +28,7 @@ typedef struct {
 
 
 // Global object
-code_timer_t global_timer;
+code_timer_t global_code_timer;
 
 
 void code_timer_init(code_timer_t *ct, char *timer_tag, size_t size, size_t size_trigger);

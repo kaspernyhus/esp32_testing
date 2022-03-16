@@ -17,10 +17,11 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
     sg->_time = 0.0;
     sg->_double_pi = 2.0*M_PI;
 
+    // Generate signal from LUT - create obj on the heap
     if(sg->gen_source == LUT_GEN) {
         sg->lut_gen = (lut_gen_t *)malloc(sizeof(lut_gen_t));
         lut_gen_init(sg->lut_gen,sg->lut_freq);
-        ESP_LOGI("sigGen","Signal Generator Initialized. LUT#%d. LUT size: %d", sg->lut_freq, sg->lut_gen->lut_size);
+        ESP_LOGI("sigGen","Signal Generator Initialized. LUT#%d. LUT size: %d. Freq: %f", sg->lut_freq, sg->lut_gen->lut_size, (float)(sg->sample_rate)/(sg->lut_gen->lut_size));
     }
     else ESP_LOGI("sigGen","Signal Generator Initialized. sampleRate:%d, ampl:%f, freq:%f, deltaT:%f, phase:%f", sg->sample_rate,sg->_amplitude,sg->_freq,sg->_deltaTime,sg->_phase);
 }
@@ -51,7 +52,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, int32_t *out_dat
 }
 
 
-// Calculate sine sample
+// Calculate or look up sine sample
 int32_t _sig_gen_get_sample(sig_gen_t *sg)
 {   
     if(sg->gen_source == LUT_GEN) {

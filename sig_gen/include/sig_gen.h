@@ -14,8 +14,8 @@ typedef enum {
 
 
 typedef struct {
-    gen_source_e gen_source;
-    lut_gen_t *lut_gen;
+    gen_source_e gen_source;    // Signal source: LUT or CALCulation 
+    lut_gen_t *lut_gen;         // Lookup generator obj
     lut_freq_e lut_freq;
 
     uint8_t bytes_per_sample;

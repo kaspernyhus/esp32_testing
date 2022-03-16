@@ -40,7 +40,7 @@ size_t ringbuf_write(ringbuf_t *rb, void *data, size_t bytes)
         ESP_LOGE(RB_TAG,"ERROR: Trying to write more bytes than size of buffer");
         return bytes_written;
     }
-    portENTER_CRITICAL(&spinlock);
+    // portENTER_CRITICAL(&spinlock);
     // too big to fit, only write available
     if(rb->write + bytes > rb->size) {
         size_t first_block = rb->size - rb->write;
@@ -56,7 +56,7 @@ size_t ringbuf_write(ringbuf_t *rb, void *data, size_t bytes)
         rb->write = (rb->write + bytes) % rb->size;
         bytes_written = bytes;
     }
-    portEXIT_CRITICAL(&spinlock);
+    // portEXIT_CRITICAL(&spinlock);
     
     return bytes_written;
 }
@@ -75,7 +75,7 @@ size_t ringbuf_read(ringbuf_t *rb, void *data, size_t bytes)
         ESP_LOGE(RB_TAG,"ERROR: Trying to read more bytes than size of buffer");
         return bytes_read;
     }
-    portENTER_CRITICAL(&spinlock);
+    // portENTER_CRITICAL(&spinlock);
     // wrap around read
     if(rb->read + bytes > rb->size) {
         size_t first_block = rb->size - rb->read;
@@ -91,7 +91,7 @@ size_t ringbuf_read(ringbuf_t *rb, void *data, size_t bytes)
         rb->read = (rb->read + bytes) % rb->size;
         bytes_read = bytes;
     }
-    portEXIT_CRITICAL(&spinlock);
+    // portEXIT_CRITICAL(&spinlock);
     return bytes_read;
 }
 

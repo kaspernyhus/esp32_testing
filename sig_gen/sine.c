@@ -161,7 +161,9 @@ uint16_t sine_lut_60[] = {
 };
 
 
-
+/*
+Reference a sine LUT and get size
+*/
 void lut_gen_init(lut_gen_t *lsg, lut_freq_e freq)
 {
     switch (freq) {
@@ -193,6 +195,10 @@ void lut_gen_init(lut_gen_t *lsg, lut_freq_e freq)
     lsg->pos = 0;
 }
 
+
+/*
+Returns one sample
+*/
 uint16_t lut_gen_get_sample(lut_gen_t *lsg)
 {
     uint16_t sample = lsg->lut[lsg->pos];
@@ -203,6 +209,10 @@ uint16_t lut_gen_get_sample(lut_gen_t *lsg)
     return sample;
 }
 
+
+/*
+Returns a number of samples
+*/
 void lut_gen_get_samples(lut_gen_t *lsg, uint16_t *out_buffer, size_t samples)
 {
     for(int i=0; i<samples; i++) {

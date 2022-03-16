@@ -16,12 +16,12 @@ typedef enum {
 
 
 typedef struct {
-    size_t pos;
-    uint16_t *lut;
-    size_t lut_size;
+    size_t pos;         // lookup position
+    uint16_t *lut;      // pointer to lookup table
+    size_t lut_size;    // table size
 } lut_gen_t;
 
-void lut_gen_init(lut_gen_t *lsg, lut_freq_e freq);
 
+void lut_gen_init(lut_gen_t *lsg, lut_freq_e freq);
 uint16_t lut_gen_get_sample(lut_gen_t *lsg);
 void lut_gen_get_samples(lut_gen_t *lsg, uint16_t *out_buffer, size_t samples);

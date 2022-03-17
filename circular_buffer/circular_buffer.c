@@ -1,5 +1,6 @@
 #include "circular_buffer.h"
 #include "esp_log.h"
+#include "esp_err.h"
 
 const char *RB_TAG = "ringbuffer";
 static portMUX_TYPE spinlock = portMUX_INITIALIZER_UNLOCKED;
@@ -10,12 +11,18 @@ Initialize ringbuffer
 @buffer: user provided buffer
 @size: size of user buffer in bytes
 */
-void ringbuf_init(ringbuf_t *rb, uint8_t *buffer, size_t size)
+esp_err_t ringbuf_init(ringbuf_t *rb, uint8_t *buffer, size_t size)
 {
+    if(size % 2 != 0) {
+        ESP_LOGE(RB_TAG,"Please provide a buffer with an even number of bytes");
+        return pdFAIL;
+    }
+    
     rb->buffer = buffer;
     rb->size = size;
     ringbuf_reset(rb);
     ESP_LOGI(RB_TAG,"Ringbuffer created. Size: %d bytes", rb->size);
+    return pdTRUE;
 }
 
 
@@ -45,7 +52,7 @@ size_t ringbuf_write(ringbuf_t *rb, void *data, size_t bytes)
     if(available < bytes)
         ESP_LOGE(RB_TAG,"ERROR: Ringbuffer overflow");
 
-    // portENTER_CRITICAL(&spinlock);
+    portENTER_CRITICAL(&spinlock);
     size_t bytes_written = 0;
     // too big to fit, write two blocks
     if(rb->write + bytes > rb->size) {
@@ -64,7 +71,7 @@ size_t ringbuf_write(ringbuf_t *rb, void *data, size_t bytes)
             rb->write = 0;
         bytes_written = bytes;
     }
-    // portEXIT_CRITICAL(&spinlock);
+    portEXIT_CRITICAL(&spinlock);
     
     return bytes_written;
 }
@@ -89,7 +96,7 @@ size_t ringbuf_read(ringbuf_t *rb, void *data, size_t bytes)
         ESP_LOGE(RB_TAG,"ERROR: Ringbuffer underflow");
 
 
-    // portENTER_CRITICAL(&spinlock);
+    portENTER_CRITICAL(&spinlock);
     size_t bytes_read = 0;
     // wrap around read
     if(rb->read + bytes > rb->size) {
@@ -108,7 +115,7 @@ size_t ringbuf_read(ringbuf_t *rb, void *data, size_t bytes)
             rb->read = 0;
         bytes_read = bytes;
     }
-    // portEXIT_CRITICAL(&spinlock);
+    portEXIT_CRITICAL(&spinlock);
     return bytes_read;
 }
 

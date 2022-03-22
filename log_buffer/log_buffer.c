@@ -87,19 +87,58 @@ void log_buffer_print(log_buffer_t *tb)
 }
 
 
+// -------------------------------------------------
+
+
+void _log_reg_buffer_print_task(void *arg)
+{
+    log_reg_buffer_t *lr = (log_reg_buffer_t *)arg; // Get log_buffer_t obj
+    ESP_LOGI("","-------------------------------------------------");
+    ESP_LOGI("","%s",lr->tag);
+    ESP_LOGI("","-------------------------------------------------");
+    for(int i=0;i<lr->size,i++) {
+        ESP_LOGI("","%s: \t %X",lr->buffer->tag,lr->buffer->reg);
+    }
+    vTaskDelete(NULL);
+}
+
+
+/*
+Creates a freeRTOS task to print the buffer
+*/
+void log_reg_buffer_print(log_reg_buffer_t *lr)
+{
+    xTaskCreatePinnedToCore(_log_reg_buffer_print_task,"log_reg_buffer print",8192,lr,10,NULL,APP_CPU_NUM);
+    lr->is_printed = 1;
+}
 
 
 void log_reg_buffer_init(log_reg_buffer_t *lr, log_reg_t *buffer, size_t size, char *tag)
 {
     lr->buffer = buffer;
-    lr->
+    lr->size = size;
+    lr->is_printed = 0;
+    lr->tag = tag;
+    lr->write = 0;
+    memset(lr->buffer,0,sizeof(lr->buffer));
 }
 
 
 void log_reg_buffer_add(log_reg_buffer_t *lr, log_reg_t reg)
 {
-
+    if(!lr->is_printed) {
+        
+        if(lr->write+1 > lr->size) { // buffer will be overflown if a new log happens
+            log_reg_buffer_print(lr);       
+        }
+        else {
+            // Add log to log buffer
+            memcpy(lr->buffer + lr->write,reg,sizeof(reg));
+            lr->write++;
+        }
+    }
 }
+
 
 
 

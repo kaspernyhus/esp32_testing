@@ -2,6 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 
 
 const char *TB_TAG = "log_buffer";
@@ -93,11 +94,20 @@ void log_buffer_print(log_buffer_t *tb)
 void _log_reg_buffer_print_task(void *arg)
 {
     log_reg_buffer_t *lr = (log_reg_buffer_t *)arg; // Get log_buffer_t obj
+    uint32_t last = 0;
     ESP_LOGI("","-------------------------------------------------");
     ESP_LOGI("","%s",lr->tag);
     ESP_LOGI("","-------------------------------------------------");
-    for(int i=0;i<lr->size;i++) {
-        ESP_LOGI("","%s: \t 0x%X",(lr->buffer+i)->tag,(lr->buffer+i)->reg);
+    if(lr->incl_time) {
+        for(int i=0;i<lr->size;i++) {
+            ESP_LOGI("","%s: \t 0x%.8X \t %d",(lr->buffer+i)->tag,(lr->buffer+i)->reg,(lr->buffer+i)->timestamp-last);
+            last = (lr->buffer+i)->timestamp;
+        }
+    }
+    else {
+        for(int i=0;i<lr->size;i++) {
+            ESP_LOGI("","%s: \t 0x%.8X",(lr->buffer+i)->tag,(lr->buffer+i)->reg);
+        }
     }
     vTaskDelete(NULL);
 }
@@ -113,11 +123,12 @@ void log_reg_buffer_print(log_reg_buffer_t *lr)
 }
 
 
-void log_reg_buffer_init(log_reg_buffer_t *lr, log_reg_t *buffer, size_t size, char *tag)
+void log_reg_buffer_init(log_reg_buffer_t *lr, log_reg_t *buffer, size_t size, uint8_t incl_timestamps, char *tag)
 {
     lr->buffer = buffer;
     lr->size = size;
     lr->is_printed = 0;
+    lr->incl_time = incl_timestamps;
     lr->tag = tag;
     lr->write = 0;
     memset(lr->buffer,0,sizeof(log_reg_t)*lr->size);
@@ -127,7 +138,6 @@ void log_reg_buffer_init(log_reg_buffer_t *lr, log_reg_t *buffer, size_t size, c
 void log_reg_buffer_add(log_reg_buffer_t *lr, uint32_t reg, char *tag)
 {
     if(!lr->is_printed) {
-        
         if(lr->write+1 > lr->size) { // buffer will be overflown if a new log happens
             log_reg_buffer_print(lr);       
         }
@@ -137,12 +147,19 @@ void log_reg_buffer_add(log_reg_buffer_t *lr, uint32_t reg, char *tag)
                 .reg = reg,
                 .tag = tag
             };
+            if(lr->incl_time) {
+                lreg.timestamp = (uint32_t)esp_timer_get_time();
+            }
             lr->buffer[lr->write] = lreg;
             lr->write++;
         }
     }
 }
 
-
+void log_reg_buffer_enable_global(log_reg_t *buffer, size_t size, uint8_t incl_timestamps)
+{
+    log_reg_buffer_init(&global_reg_buf,buffer,size,incl_timestamps,"Global register buffer");
+    ESP_LOGI(TB_TAG,"Global log_reg_buffer initialized");
+}
 
 

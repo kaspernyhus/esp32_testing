@@ -86,3 +86,20 @@ void log_buffer_print(log_buffer_t *tb)
     tb->is_printed = 1;
 }
 
+
+
+
+void log_reg_buffer_init(log_reg_buffer_t *lr, log_reg_t *buffer, size_t size, char *tag)
+{
+    lr->buffer = buffer;
+    lr->
+}
+
+
+void log_reg_buffer_add(log_reg_buffer_t *lr, log_reg_t reg)
+{
+
+}
+
+
+

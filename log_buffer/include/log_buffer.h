@@ -7,6 +7,23 @@
 
 typedef struct
 {
+    uint32_t reg;
+    char *tag;
+} log_reg_t;
+
+
+typedef struct
+{
+    log_reg_t *buffer;
+    size_t size;
+    size_t write;
+    uint8_t is_printed;
+    char *tag;
+} log_reg_buffer_t;
+
+
+typedef struct
+{
     uint8_t *buffer;
     size_t size;
     size_t write;
@@ -23,7 +40,8 @@ log_buffer_t global_log_buf;
 void log_buffer_init(log_buffer_t *tb, uint8_t *buffer, size_t size, size_t delayed_start, char *tag);
 void log_buffer_add(log_buffer_t *tb, void *data, size_t bytes);
 void log_buffer_add_byte(log_buffer_t *tb, uint8_t data);
-
 void log_buffer_enable_global(uint8_t *buffer, size_t size, size_t delayed_start);
-
 void log_buffer_print(log_buffer_t *tb);
+
+void log_reg_buffer_init(log_reg_buffer_t *lr, log_reg_t *buffer, size_t size, char *tag);
+void log_reg_buffer_add(log_reg_buffer_t *lr, log_reg_t reg);

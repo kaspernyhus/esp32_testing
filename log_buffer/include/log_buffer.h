@@ -44,4 +44,4 @@ void log_buffer_enable_global(uint8_t *buffer, size_t size, size_t delayed_start
 void log_buffer_print(log_buffer_t *tb);
 
 void log_reg_buffer_init(log_reg_buffer_t *lr, log_reg_t *buffer, size_t size, char *tag);
-void log_reg_buffer_add(log_reg_buffer_t *lr, log_reg_t reg);
+void log_reg_buffer_add(log_reg_buffer_t *lr, uint32_t reg, char *tag);

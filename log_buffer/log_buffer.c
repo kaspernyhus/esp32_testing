@@ -96,8 +96,8 @@ void _log_reg_buffer_print_task(void *arg)
     ESP_LOGI("","-------------------------------------------------");
     ESP_LOGI("","%s",lr->tag);
     ESP_LOGI("","-------------------------------------------------");
-    for(int i=0;i<lr->size,i++) {
-        ESP_LOGI("","%s: \t %X",lr->buffer->tag,lr->buffer->reg);
+    for(int i=0;i<lr->size;i++) {
+        ESP_LOGI("","%s: \t 0x%X",(lr->buffer+i)->tag,(lr->buffer+i)->reg);
     }
     vTaskDelete(NULL);
 }
@@ -120,11 +120,11 @@ void log_reg_buffer_init(log_reg_buffer_t *lr, log_reg_t *buffer, size_t size, c
     lr->is_printed = 0;
     lr->tag = tag;
     lr->write = 0;
-    memset(lr->buffer,0,sizeof(lr->buffer));
+    memset(lr->buffer,0,sizeof(log_reg_t)*lr->size);
 }
 
 
-void log_reg_buffer_add(log_reg_buffer_t *lr, log_reg_t reg)
+void log_reg_buffer_add(log_reg_buffer_t *lr, uint32_t reg, char *tag)
 {
     if(!lr->is_printed) {
         
@@ -133,7 +133,11 @@ void log_reg_buffer_add(log_reg_buffer_t *lr, log_reg_t reg)
         }
         else {
             // Add log to log buffer
-            memcpy(lr->buffer + lr->write,reg,sizeof(reg));
+            log_reg_t lreg = {
+                .reg = reg,
+                .tag = tag
+            };
+            lr->buffer[lr->write] = lreg;
             lr->write++;
         }
     }

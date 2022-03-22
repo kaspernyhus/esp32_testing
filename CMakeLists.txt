@@ -5,7 +5,7 @@ list(APPEND includes
     # "code_timer/include"
     "circular_buffer/include"
     "sig_gen/include"
-    # "test_buffer/include"
+    "log_buffer/include"
 )
 
 list(APPEND srsc
@@ -13,7 +13,7 @@ list(APPEND srsc
     "circular_buffer/circular_buffer.c"
     "sig_gen/sig_gen.c"
     "sig_gen/sine.c"
-    # "test_buffer/test_buffer.c"
+    "log_buffer/log_buffer.c"
 )
 
 

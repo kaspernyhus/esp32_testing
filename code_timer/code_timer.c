@@ -13,7 +13,7 @@ int timers_active = 1;
 
 void code_timer_enable_global(size_t size)
 {
-    code_timer_init(&global_timer,"Global timer",size,size);
+    code_timer_init(&global_code_timer,"Global timer",size,size);
     ESP_LOGI(CT_TAG,"Global code timer initialized");
     code_timer_enable_all();    
 }

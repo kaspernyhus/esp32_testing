@@ -1,6 +1,6 @@
-#include "sine.h"
+#include "sine_lut.h"
 
-uint16_t sine_lut_1k[] = {
+static uint32_t sine_lut_1k[] = {
     0x0,0x10b5,0x2120,0x30fb,0x3fff,0x4deb,0x5a82,0x658c,
     0x6ed9,0x7641,0x7ba2,0x7ee7,0x7fff,0x7ee7,0x7ba2,0x7641,
     0x6ed9,0x658c,0x5a82,0x4deb,0x3fff,0x30fb,0x2120,0x10b5,
@@ -10,7 +10,7 @@ uint16_t sine_lut_1k[] = {
 };
 
 
-uint16_t sine_lut_1k3[] = {
+static uint32_t sine_lut_1k3[] = {
     0x0,0x15a1,0x2aa4,0x3e6c,0x5069,0x6015,0x6cfe,0x76c4,
     0x7d20,0x7fe1,0x7ef6,0x7a63,0x724a,0x66e8,0x5891,0x47ac,
     0x34b8,0x2040,0xada,0xf525,0xdfbf,0xcb47,0xb853,0xa76e,
@@ -19,13 +19,13 @@ uint16_t sine_lut_1k3[] = {
 };
 
 
-uint16_t sine_lut_5k3[] = {
+static uint32_t sine_lut_5k3[] = {
     0x0,0x5246,0x7e0d,0x6ed9,0x2bc7,0xd438,0x9126,0x81f2,
     0xadb9
 };
 
 
-uint16_t sine_lut_440[] = {
+static uint32_t sine_lut_440[] = {
     0x0,0x75f,0xeb9,0x1606,0x1d40,0x2462,0x2b64,0x3242,
     0x38f4,0x3f77,0x45c3,0x4bd4,0x51a5,0x5730,0x5c71,0x6163,
     0x6603,0x6a4c,0x6e3a,0x71cb,0x74fb,0x77c7,0x7a2e,0x7c2d,
@@ -43,7 +43,7 @@ uint16_t sine_lut_440[] = {
 };
 
 
-uint16_t sine_lut_552[] = {
+static uint32_t sine_lut_552[] = {
     0x0,0x93c,0x126c,0x1b84,0x2476,0x2d38,0x35be,0x3dfc,
     0x45e8,0x4d76,0x549c,0x5b52,0x618e,0x6747,0x6c77,0x7116,
     0x751e,0x788a,0x7b55,0x7d7b,0x7efa,0x7fcf,0x7ffa,0x7f7a,
@@ -57,7 +57,7 @@ uint16_t sine_lut_552[] = {
     0xc203,0xca41,0xd2c7,0xdb89,0xe47b,0xed93,0xf6c3
 };
 
-uint16_t sine_lut_60[] = {
+static uint32_t sine_lut_60[] = {
     0x0,0x101,0x202,0x303,0x405,0x506,0x607,0x708,
     0x809,0x90a,0xa0a,0xb0b,0xc0b,0xd0b,0xe0b,0xf0b,
     0x100a,0x110a,0x1208,0x1307,0x1405,0x1503,0x1601,0x16ff,
@@ -161,12 +161,12 @@ uint16_t sine_lut_60[] = {
 };
 
 
-uint16_t sine_lut_TEST_A[] = {
-    0x1111,0x2222,0x3333,0x4444,0x5555,0x6666,0x7777,0x8888,
+static uint32_t sine_lut_TEST_A[] = {
+    0x1111,0x2222,0x3333,0x4444,0x5555,0x6666,0x7777,0x8888,0x9999,
     0xaaaa,0xbbbb,0xcccc,0xdddd,0xeeee,0xffff,
 };
 
-uint16_t sine_lut_TEST_B[] = {
+static uint32_t sine_lut_TEST_B[] = {
     0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,0x1111,
     0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,0x2222,
     0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,0x3333,
@@ -176,43 +176,59 @@ uint16_t sine_lut_TEST_B[] = {
     0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,0x7777,
 };
 
+
+static uint32_t sine_lut_TEST_A_24[] = {
+    0x111111,0x222222,0x333333,0x444444,0x555555,0x666666,0x777777,0x888888,0x999999,
+    0xaaaaaa,0xbbbbbb,0xcccccc,0xdddddd,0xeeeeee,0xffffff,
+};
+
+
 /*
 Reference a sine LUT and get size
 */
 void lut_gen_init(lut_gen_t *lsg, lut_freq_e freq)
 {
     switch (freq) {
-        case FREQ_1K:
+        case LUT_FREQ_1K:
             lsg->lut = sine_lut_1k;
-            lsg->lut_size = sizeof(sine_lut_1k)/2;
+            lsg->lut_size = sizeof(sine_lut_1k)/4;
             break;
-        case FREQ_1K3:
+        case LUT_FREQ_1K3:
             lsg->lut = sine_lut_1k3;
-            lsg->lut_size = sizeof(sine_lut_1k3)/2;
+            lsg->lut_size = sizeof(sine_lut_1k3)/4;
             break;
-        case FREQ_440:
+        case LUT_FREQ_440:
             lsg->lut = sine_lut_440;
-            lsg->lut_size = sizeof(sine_lut_440)/2;
+            lsg->lut_size = sizeof(sine_lut_440)/4;
             break;
-        case FREQ_552:
+        case LUT_FREQ_552:
             lsg->lut = sine_lut_552;
-            lsg->lut_size = sizeof(sine_lut_552)/2;
+            lsg->lut_size = sizeof(sine_lut_552)/4;
             break;
-        case FREQ_5K3:
+        case LUT_FREQ_5K3:
             lsg->lut = sine_lut_5k3;
-            lsg->lut_size = sizeof(sine_lut_5k3)/2;
+            lsg->lut_size = sizeof(sine_lut_5k3)/4;
             break;
-        case TEST_A:
+        case LUT_FREQ_60:
+            lsg->lut = sine_lut_60;
+            lsg->lut_size = sizeof(sine_lut_60)/4;
+            break;
+        case LUT_TEST_A:
             lsg->lut = sine_lut_TEST_A;
-            lsg->lut_size = sizeof(sine_lut_TEST_A)/2;
+            lsg->lut_size = sizeof(sine_lut_TEST_A)/4;
             break;
-        case TEST_B:
+        case LUT_TEST_B:
             lsg->lut = sine_lut_TEST_B;
-            lsg->lut_size = sizeof(sine_lut_TEST_B)/2;
+            lsg->lut_size = sizeof(sine_lut_TEST_B)/4;
             break;
+        case LUT_TEST_A_24:
+            lsg->lut = sine_lut_TEST_A_24;
+            lsg->lut_size = sizeof(sine_lut_TEST_A_24)/4;
+            break;
+        
         default:
             lsg->lut = sine_lut_1k;
-            lsg->lut_size = sizeof(sine_lut_1k)/2;
+            lsg->lut_size = sizeof(sine_lut_1k)/4;
             break;
     }
     lsg->pos = 0;
@@ -222,9 +238,9 @@ void lut_gen_init(lut_gen_t *lsg, lut_freq_e freq)
 /*
 Returns one sample
 */
-uint16_t lut_gen_get_sample(lut_gen_t *lsg)
+uint32_t lut_gen_get_sample(lut_gen_t *lsg)
 {
-    uint16_t sample = lsg->lut[lsg->pos];
+    uint32_t sample = lsg->lut[lsg->pos];
     if(lsg->pos < lsg->lut_size-1)
         lsg->pos++;
     else
@@ -236,13 +252,9 @@ uint16_t lut_gen_get_sample(lut_gen_t *lsg)
 /*
 Returns a number of samples
 */
-void lut_gen_get_samples(lut_gen_t *lsg, uint16_t *out_buffer, size_t samples)
+void lut_gen_get_samples(lut_gen_t *lsg, uint32_t *out_buffer, size_t samples)
 {
     for(int i=0; i<samples; i++) {
-        out_buffer[i] = lsg->lut[lsg->pos];
-        if(lsg->pos < lsg->lut_size)
-            lsg->pos++;
-        else
-            lsg->pos = 0;
+        out_buffer[i] = lut_gen_get_sample(lsg);
     }
 }

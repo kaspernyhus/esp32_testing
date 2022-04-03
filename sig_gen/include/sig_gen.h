@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "sine.h"
+#include "sine_lut.h"
 
 
 typedef enum {

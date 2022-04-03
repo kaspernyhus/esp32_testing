@@ -2,6 +2,10 @@
 
 Records a timestamp in us and displays the resault when a set number of timestamps has been recorded.
 
+### Global scope
+object: `global_code_timer;`\
+initialization: `code_timer_enable_global(size_t size);`
+
 ## Example
 ```
 code_timer_t timer;

@@ -85,6 +85,10 @@ void code_timer_init(code_timer_t *ct, char *timer_tag, size_t size, size_t size
         ESP_LOGW(CT_TAG,"Buffer size = 0, setting to 10");
         _size = 10;
     }
+    if(_size < size_trigger) {
+        ESP_LOGW(CT_TAG,"Buffer size set to size_trigger");
+        _size = size_trigger;
+    }
     ct->buffer = (timings_t *)malloc(sizeof(timings_t)*_size);
     ct->size = _size;
     ct->_idx = 0;

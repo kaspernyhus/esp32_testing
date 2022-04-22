@@ -29,6 +29,7 @@ void log_buffer_add(log_buffer_t *tb, void *data, size_t bytes)
                 log_buffer_print(tb);       
             }
             else {
+                printf(".");
                 // Add data to log buffer
                 memcpy(tb->buffer + tb->write,data,bytes);
                 tb->write += bytes;

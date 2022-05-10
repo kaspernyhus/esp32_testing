@@ -1,8 +1,8 @@
 #pragma once
 
-#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include "esp_err.h"
 
 #include "sine_lut.h"
 
@@ -12,6 +12,11 @@ typedef enum {
     CALC_GEN
 } gen_source_e;
 
+typedef enum {
+    SIG_GEN_LE,
+    SIG_GEN_BE
+} endianess_t;
+
 
 typedef struct {
     gen_source_e gen_source;    // Signal source: LUT or CALCulation 
@@ -20,6 +25,7 @@ typedef struct {
 
     uint8_t bytes_per_sample;
     uint16_t sample_rate;
+    endianess_t endianess;
 
     float _amplitude;
     float _freq;
@@ -27,6 +33,8 @@ typedef struct {
     double _deltaTime;
     float _phase;
     double _double_pi;
+
+    uint8_t initialized;
 } sig_gen_t;
 
 
@@ -35,6 +43,7 @@ typedef struct {
     lut_freq_e lut_freq;
     uint8_t bytes_per_sample;
     uint16_t sample_rate;
+    endianess_t endianess;
     float amplitude;
     float freq;
     float phase;
@@ -42,8 +51,8 @@ typedef struct {
 
 
 void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg);
-size_t sig_gen_output( sig_gen_t *sg, int32_t *out_data, size_t samples);
-size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, int32_t *out_data, size_t samples);
+size_t sig_gen_output( sig_gen_t *sg, uint8_t *out_data, size_t samples);
+size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_data, size_t samples);
 
-int32_t _sig_gen_get_sample(sig_gen_t *sg);
+uint32_t _sig_gen_get_sample(sig_gen_t *sg);
 

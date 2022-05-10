@@ -7,16 +7,12 @@
 
 typedef enum {
     LUT_FREQ_1K,
-    LUT_FREQ_1k_24,
     LUT_FREQ_1K3,
     LUT_FREQ_5K3,
     LUT_FREQ_440,
     LUT_FREQ_552,
-    LUT_FREQ_60,
     LUT_TEST_A,
     LUT_TEST_B,
-    LUT_TEST_A_24,
-    LUT_TEST_B_24
 } lut_freq_e;
 
 
@@ -29,4 +25,3 @@ typedef struct {
 
 void lut_gen_init(lut_gen_t *lsg, lut_freq_e freq);
 uint32_t lut_gen_get_sample(lut_gen_t *lsg);
-void lut_gen_get_samples(lut_gen_t *lsg, uint32_t *out_buffer, size_t samples);

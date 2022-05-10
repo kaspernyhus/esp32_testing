@@ -35,7 +35,7 @@ size_t sig_gen_output(sig_gen_t *sg, int32_t *out_data, size_t samples)
     return samples * sg->bytes_per_sample;
 }
 
-// Takes two signal_gen objs and produce a stereo sine
+// Takes two sig_gen objs and produce a stereo sine
 size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, int32_t *out_data, size_t samples)
 {
     if (sg_l->bytes_per_sample == 2 && sg_r->bytes_per_sample == 2) {
@@ -50,25 +50,17 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, int32_t *out_dat
         }
     }
     else if (sg_l->bytes_per_sample == 3 && sg_r->bytes_per_sample == 3) {
-        uint8_t *out_data_bytes = (uint8_t *)out_data;
-
-        for(int i=0;i<(samples*3);i+=6) {
+        size_t out_index = 0;
+        for(int i=0;i<(samples);i++) {
             uint32_t l_sample = _sig_gen_get_sample(sg_l);
             uint32_t r_sample = _sig_gen_get_sample(sg_r);
         
-            out_data_bytes[i] = l_sample & 0xFF;
-            out_data_bytes[i+1] = (l_sample>>8) & 0xFF;
-            out_data_bytes[i+2] = (l_sample>>16) & 0xFF;
-            out_data_bytes[i+3] = r_sample & 0xFF;
-            out_data_bytes[i+4] = (r_sample>>8) & 0xFF;
-            out_data_bytes[i+5] = (r_sample>>16) & 0xFF;
+            out_data[out_index++] = l_sample;
+            out_data[out_index++] = r_sample;
         }
     }
     else {
-        for(int i=0;i<samples;i+=2) {
-            out_data[i] = _sig_gen_get_sample(sg_l);
-            out_data[i+1] = _sig_gen_get_sample(sg_r);
-        }
+        ESP_LOGE("sig_gen","bytes per sample L; %d // bytes per sample R; %d", sg_l->bytes_per_sample, sg_r->bytes_per_sample);
     }
     return samples * sg_l->bytes_per_sample * 2;
 }

@@ -7,6 +7,7 @@
 
 typedef enum {
     LUT_FREQ_1K,
+    LUT_FREQ_1k_24,
     LUT_FREQ_1K3,
     LUT_FREQ_5K3,
     LUT_FREQ_440,
@@ -15,6 +16,7 @@ typedef enum {
     LUT_TEST_A,
     LUT_TEST_B,
     LUT_TEST_A_24,
+    LUT_TEST_B_24
 } lut_freq_e;
 
 

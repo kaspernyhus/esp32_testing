@@ -6,6 +6,7 @@ list(APPEND includes
     "circular_buffer/include"
     "sig_gen/include"
     "log_buffer/include"
+    "remote_log/include"
 )
 
 list(APPEND srsc
@@ -14,6 +15,7 @@ list(APPEND srsc
     "sig_gen/sig_gen.c"
     "sig_gen/sine_lut.c"
     "log_buffer/log_buffer.c"
+    "remote_log/remote_log.c"
 )
 
 

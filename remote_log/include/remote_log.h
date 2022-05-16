@@ -31,5 +31,5 @@ typedef struct {
 
 
 esp_err_t remote_log_init(uint32_t log_frequency_ms);
-esp_err_t remote_log_register(payload_id_t id, void(*cb)(void));
+esp_err_t remote_log_register(remote_log_t log);
 

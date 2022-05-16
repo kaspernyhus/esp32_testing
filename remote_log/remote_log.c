@@ -24,7 +24,14 @@ static void remote_logs_cb(void* arg)
 
 esp_err_t remote_log_init(uint32_t log_frequency_ms)
 {
-    timer_create_periodic(log_frequency_ms, &remote_logs_cb);
+    const esp_timer_create_args_t periodic_timer_args = {
+            .callback = remote_logs_cb,
+            .name = "remote log timer"
+    };
+    esp_timer_handle_t periodic_timer;
+    ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, log_frequency_ms*1000));
+    ESP_LOGI(RMLOG_TAG, "Periodic timer started: %d ms", log_frequency_ms);
     ESP_LOGI(RMLOG_TAG,"Remote logging started");
     return ESP_OK;
 }

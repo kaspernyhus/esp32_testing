@@ -54,5 +54,5 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg);
 size_t sig_gen_output( sig_gen_t *sg, uint8_t *out_data, size_t samples);
 size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_data, size_t samples);
 
-uint32_t _sig_gen_get_sample(sig_gen_t *sg);
+// uint32_t _sig_gen_get_sample(sig_gen_t *sg);
 

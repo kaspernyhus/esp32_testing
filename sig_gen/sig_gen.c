@@ -7,6 +7,27 @@
 
 static const char *SIG_TAG = "sigGen";
 
+
+// Calculate or look up sine sample
+uint32_t _sig_gen_get_sample(sig_gen_t *sg)
+{
+    switch (sg->gen_source) {
+        case LUT_GEN:
+            return lut_gen_get_sample(sg->lut_gen);
+
+        case CALC_GEN: {
+            double angle = sg->_double_pi * sg->_freq * sg->_time + sg->_phase;
+            double result = sg->_amplitude * sin(angle);
+            sg->_time += sg->_deltaTime;
+            return result;
+            }
+        
+        default:
+            return 0;
+    }   
+}
+
+
 void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
 {
     sg->gen_source = cfg->gen_source;
@@ -184,25 +205,6 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
     }
 
     return out_index;
-}
-
-// Calculate or look up sine sample
-uint32_t _sig_gen_get_sample(sig_gen_t *sg)
-{
-    switch (sg->gen_source) {
-        case LUT_GEN:
-            return lut_gen_get_sample(sg->lut_gen);
-
-        case CALC_GEN: {
-            double angle = sg->_double_pi * sg->_freq * sg->_time + sg->_phase;
-            double result = sg->_amplitude * sin(angle);
-            sg->_time += sg->_deltaTime;
-            return result;
-            }
-        
-        default:
-            return 0;
-    }   
 }
 
 

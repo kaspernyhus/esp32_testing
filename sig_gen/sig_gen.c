@@ -48,14 +48,14 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
         case 2: // 16bit LE
             if(sg->endianess == SIG_GEN_LE) {
                 for(int i=0;i<samples;i++) {
-                    uint16_t sample = (uint16_t)_sig_gen_get_sample(sg);
+                    uint16_t sample = (uint16_t)(_sig_gen_get_sample(sg)>>8);
                     out_data[out_index++] = (sample >> 8) & 0xff;
                     out_data[out_index++] = (sample & 0xff);
                 }
             }
             else {  // BE
                 for(int i=0;i<samples;i++) {
-                    uint16_t sample = (uint16_t)_sig_gen_get_sample(sg);
+                    uint16_t sample = (uint16_t)(_sig_gen_get_sample(sg)>>8);
                     out_data[out_index++] = (sample & 0xff);
                     out_data[out_index++] = (sample >> 8) & 0xff;
                 }
@@ -108,8 +108,8 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                 uint16_t r_sample;
 
                 for(int i=0;i<samples;i++) {
-                    l_sample = (uint16_t)_sig_gen_get_sample(sg_l);
-                    r_sample = (uint16_t)_sig_gen_get_sample(sg_r);
+                    l_sample = (uint16_t)(_sig_gen_get_sample(sg_l)>>8);
+                    r_sample = (uint16_t)(_sig_gen_get_sample(sg_r)>>8);
                     // Combine l & r
                     uint32_t lr_combined = (r_sample<<16)|(l_sample & 0xffff);
 
@@ -124,8 +124,8 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                 uint16_t r_sample;
 
                 for(int i=0;i<samples;i++) {
-                    l_sample = (uint16_t)_sig_gen_get_sample(sg_l);
-                    r_sample = (uint16_t)_sig_gen_get_sample(sg_r);
+                    l_sample = (uint16_t)(_sig_gen_get_sample(sg_l)>>8);
+                    r_sample = (uint16_t)(_sig_gen_get_sample(sg_r)>>8);
                     // Combine l & r
                     uint32_t lr_combined = (r_sample<<16)|(l_sample & 0xffff);
 

@@ -27,11 +27,11 @@ typedef struct {
     uint16_t sample_rate;
     endianess_t endianess;
 
-    float _amplitude;
-    float _freq;
-    float _time;
+    double _amplitude;
+    double _freq;
+    double _time;
     double _deltaTime;
-    float _phase;
+    double _phase;
     double _double_pi;
 
     uint8_t initialized;
@@ -44,9 +44,9 @@ typedef struct {
     uint8_t bytes_per_sample;
     uint16_t sample_rate;
     endianess_t endianess;
-    float amplitude;
-    float freq;
-    float phase;
+    double amplitude;
+    double freq;
+    double phase;
 } sig_gen_config_t;
 
 

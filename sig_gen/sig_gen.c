@@ -16,13 +16,15 @@ uint32_t _sig_gen_get_sample(sig_gen_t *sg)
             return lut_gen_get_sample(sg->lut_gen);
 
         case CALC_GEN: {
-            double angle = sg->_double_pi * sg->_freq * sg->_time + sg->_phase;
-            double result = sg->_amplitude * sin(angle);
-            sg->_time += sg->_deltaTime;
-            return result;
+                double angle = sg->_double_pi * sg->_freq * sg->_time + sg->_phase;
+                double result = sg->_amplitude * sin(angle);
+                sg->_time += sg->_deltaTime;
+                // ESP_LOGI("sample","%.6x",(uint32_t)result);
+                return (uint32_t)result;
             }
         
         default:
+            ESP_LOGE(SIG_TAG,"Signal Generator Error - no generator");
             return 0;
     }   
 }
@@ -35,7 +37,7 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
     sg->bytes_per_sample = cfg->bytes_per_sample;
     sg->sample_rate = cfg->sample_rate;
     sg->endianess = cfg->endianess;
-    sg->_amplitude = ((pow(2,cfg->bytes_per_sample*8-1))) * cfg->amplitude;
+    sg->_amplitude = floor((pow(2,24)-1)/2) * cfg->amplitude;
     sg->_freq = cfg->freq;
     sg->_deltaTime = (1.0 / cfg->sample_rate);
     sg->_phase = cfg->phase;
@@ -132,7 +134,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                     l_sample = (uint16_t)(_sig_gen_get_sample(sg_l)>>8);
                     r_sample = (uint16_t)(_sig_gen_get_sample(sg_r)>>8);
                     // Combine l & r
-                    uint32_t lr_combined = (r_sample<<16)|(l_sample & 0xffff);
+                    uint32_t lr_combined = (l_sample<<16)|(r_sample & 0xffff);
 
                     out_data[out_index++] = (lr_combined >> 16) & 0xff;
                     out_data[out_index++] = (lr_combined >> 24) & 0xff;
@@ -148,7 +150,7 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                     l_sample = (uint16_t)(_sig_gen_get_sample(sg_l)>>8);
                     r_sample = (uint16_t)(_sig_gen_get_sample(sg_r)>>8);
                     // Combine l & r
-                    uint32_t lr_combined = (r_sample<<16)|(l_sample & 0xffff);
+                    uint32_t lr_combined = (l_sample<<16)|(r_sample & 0xffff);
 
                     out_data[out_index++] = (lr_combined >> 24) & 0xff;
                     out_data[out_index++] = (lr_combined >> 16) & 0xff;

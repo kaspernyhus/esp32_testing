@@ -103,6 +103,28 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
                 }
             }
             break;
+
+        case 4: // 24/32bit LE
+            if(sg->endianess == SIG_GEN_LE) {
+                for(int i=0;i<samples;i++) {
+                    uint32_t sample = _sig_gen_get_sample(sg);
+                    out_data[out_index++] = (sample & 0xff);
+                    out_data[out_index++] = (sample >> 8) & 0xff;
+                    out_data[out_index++] = (sample >> 16) & 0xff;
+                    out_data[out_index++] = (sample >> 24) & 0xff;
+                }
+            }
+            else {  // BE
+                for(int i=0;i<samples;i++) {
+                    uint32_t sample = _sig_gen_get_sample(sg);
+                    out_data[out_index++] = (sample >> 24) & 0xff;
+                    out_data[out_index++] = (sample >> 16) & 0xff;
+                    out_data[out_index++] = (sample >> 8) & 0xff;
+                    out_data[out_index++] = (sample & 0xff);
+                }
+            }
+            break;
+        
         
         default:
             ESP_LOGE(SIG_TAG,"ERROR: bytes per sample %d", sg->bytes_per_sample);
@@ -194,6 +216,51 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
                     out_data[out_index++] = (l_sample & 0xff);
 
                     // r
+                    out_data[out_index++] = (r_sample >> 16) & 0xff;
+                    out_data[out_index++] = (r_sample >> 8) & 0xff;
+                    out_data[out_index++] = (r_sample & 0xff);
+                }
+            }
+            break;
+
+        case 4: // 24/32bit LE
+            if(end_combined == SIG_GEN_LE) {
+                uint32_t l_sample;
+                uint32_t r_sample;
+
+                for(int i=0;i<samples;i++) {
+                    l_sample = _sig_gen_get_sample(sg_l);
+                    r_sample = _sig_gen_get_sample(sg_r);
+                    
+                    // l
+                    out_data[out_index++] = (l_sample & 0xff);
+                    out_data[out_index++] = (l_sample >> 8) & 0xff;
+                    out_data[out_index++] = (l_sample >> 16) & 0xff;
+                    out_data[out_index++] = (l_sample >> 24) & 0xff;
+
+                    // r
+                    out_data[out_index++] = (r_sample & 0xff);
+                    out_data[out_index++] = (r_sample >> 8) & 0xff;
+                    out_data[out_index++] = (r_sample >> 16) & 0xff;
+                    out_data[out_index++] = (r_sample >> 24) & 0xff;
+                }
+            }
+            else { // BE
+                uint32_t l_sample;
+                uint32_t r_sample;
+
+                for(int i=0;i<samples;i++) {
+                    l_sample = _sig_gen_get_sample(sg_l);
+                    r_sample = _sig_gen_get_sample(sg_r);
+                    
+                    // l
+                    out_data[out_index++] = (l_sample >> 24) & 0xff;
+                    out_data[out_index++] = (l_sample >> 16) & 0xff;
+                    out_data[out_index++] = (l_sample >> 8) & 0xff;
+                    out_data[out_index++] = (l_sample & 0xff);
+
+                    // r
+                    out_data[out_index++] = (r_sample >> 24) & 0xff;
                     out_data[out_index++] = (r_sample >> 16) & 0xff;
                     out_data[out_index++] = (r_sample >> 8) & 0xff;
                     out_data[out_index++] = (r_sample & 0xff);

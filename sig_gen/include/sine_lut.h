@@ -18,7 +18,7 @@ typedef enum {
 
 typedef struct {
     size_t pos;         // lookup position
-    uint32_t *lut;      // pointer to lookup table
+    const uint32_t *lut;      // pointer to lookup table
     size_t lut_size;    // table size
 } lut_gen_t;
 

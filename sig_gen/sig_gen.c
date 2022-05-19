@@ -3,6 +3,7 @@
 #include "math.h"
 #include "sig_gen.h"
 #include "esp_log.h"
+#include "esp_random.h"
 
 
 static const char *SIG_TAG = "sigGen";
@@ -12,19 +13,22 @@ static const char *SIG_TAG = "sigGen";
 uint32_t _sig_gen_get_sample(sig_gen_t *sg)
 {
     switch (sg->gen_source) {
-        case LUT_GEN:
+        case SINE_LUT:
             return lut_gen_get_sample(sg->lut_gen);
 
-        case CALC_GEN: {
+        case SINE_CALC: {
                 double angle = sg->_double_pi * sg->_freq * sg->_time + sg->_phase;
                 double result = sg->_amplitude * sin(angle);
                 sg->_time += sg->_deltaTime;
                 // ESP_LOGI("sample","%.6x",(uint32_t)result);
                 return (uint32_t)result;
             }
-        
+        case WHITE_NOISE: {
+            return esp_random();
+        }
+
         default:
-            ESP_LOGE(SIG_TAG,"Signal Generator Error - no generator");
+            ESP_LOGE(SIG_TAG,"Signal Generator Error - no generator source selected");
             return 0;
     }   
 }
@@ -46,7 +50,7 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
     sg->initialized = 1;
 
     // Generate signal from LUT - create obj on the heap
-    if(sg->gen_source == LUT_GEN) {
+    if(sg->gen_source == SINE_LUT) {
         sg->lut_gen = (lut_gen_t *)malloc(sizeof(lut_gen_t));
         lut_gen_init(sg->lut_gen, sg->lut_freq);
         ESP_LOGI(SIG_TAG,"Signal Generator Initialized. LUT#%d. LUT size: %d. Bytes/sample: %d. Freq: %f", sg->lut_freq, sg->lut_gen->lut_size, sg->bytes_per_sample, (float)(sg->sample_rate)/(sg->lut_gen->lut_size));

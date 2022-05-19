@@ -8,8 +8,9 @@
 
 
 typedef enum {
-    LUT_GEN,
-    CALC_GEN
+    SINE_LUT,
+    SINE_CALC,
+    WHITE_NOISE
 } gen_source_e;
 
 typedef enum {

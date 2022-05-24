@@ -16,6 +16,7 @@ list(APPEND srsc
     "sig_gen/sine_lut.c"
     "log_buffer/log_buffer.c"
     "remote_log/remote_log.c"
+    "remote_log/remote_log_udp.c"
 )
 
 

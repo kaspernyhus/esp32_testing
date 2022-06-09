@@ -21,4 +21,5 @@ list(APPEND srsc
 
 idf_component_register(SRCS ${srsc}
                     INCLUDE_DIRS ${includes}
+                    REQUIRES esp_timer
                     )

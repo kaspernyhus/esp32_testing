@@ -17,6 +17,7 @@ list(APPEND srsc
     "log_buffer/log_buffer.c"
     "remote_log/remote_log.c"
     "remote_log/remote_log_udp.c"
+    "remote_log/remote_log_uart.c"
 )
 
 

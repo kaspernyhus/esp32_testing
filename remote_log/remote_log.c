@@ -2,82 +2,38 @@
 #include "freertos/FreeRTOS.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "esp_err.h"
 #include "remote_log_udp.h"
+#include "remote_log_uart.h"
 
 
 static uint8_t active_logs = 0;
 remote_log_register_t remote_logs[MAX_LOGS];
 TaskHandle_t udp_task_handle = NULL;
+remote_log_transport_type log_transport = invalid;
 
 const char *RMLOG_TAG = "Remote Log";
 
 
-esp_err_t remote_log_send(remote_log_t *log)
+static void remote_logs_cb(void* arg);
+
+
+esp_err_t remote_log_init(uint32_t log_frequency_ms, remote_log_config *cfg)
 {
-    uint8_t udp_packet[MAX_DATA_SIZE+1];
 
-    int index = 0;
-    udp_packet[index++] = 0xA5;
-    udp_packet[index++] = log->total_len;
-    udp_packet[index++] = log->log_id.log_id;
-    udp_packet[index++] = log->log_id.tag_len;
-    memcpy(udp_packet+index,log->log_id.tag,log->log_id.tag_len);
-    index += log->log_id.tag_len;
-    udp_packet[index++] = (log->timestamp) & 0xff;
-    udp_packet[index++] = (log->timestamp >> 8) & 0xff;
-    udp_packet[index++] = (log->timestamp >> 16) & 0xff;
-    udp_packet[index++] = (log->timestamp >> 24) & 0xff;
-    udp_packet[index++] = log->data_len;
-    memcpy(udp_packet+index,log->data,log->data_len);
-    index += log->data_len;
+    if(cfg->transport_type == REMOTE_LOG_UDP) {
+        log_transport = REMOTE_LOG_UDP;
+        set_udp_ip_port("192.168.1.2", 5004);
+        get_udp_ip_port();
 
-    ESP_LOGD(RMLOG_TAG,"index: %d, log->total_len: %d", index, log->total_len);
-
-    udp_write(udp_packet, log->total_len);
-
-    return ESP_OK;
-}
-
-static void remote_logs_cb(void* arg)
-{   
-    // Call all registered callbacks here
-    if(active_logs == 0) {
-        ESP_LOGI(RMLOG_TAG,"No logs registered");
-        return;
+        // Start UDP tasks
+        xTaskCreatePinnedToCore(udp_client_task,"udp_client",4096,NULL,5,&udp_task_handle,0);
     }
 
-    for(int i=0;i<active_logs;i++) {
-        uint8_t data[MAX_DATA_SIZE];
-        size_t data_len = 0;
-        uint32_t timestamp = (uint32_t)(esp_timer_get_time()/1000);
-        uint8_t err = remote_logs[i].cb(data, &data_len);
-        if(err != 0) {
-            ESP_LOGE(RMLOG_TAG,"Callback error");
-        }
-
-        ESP_LOGD(RMLOG_TAG,"logged");
-
-        size_t total_len = 9 + remote_logs[i].id.tag_len + data_len;
-
-        remote_log_t new_log = {
-            .total_len = total_len,
-            .log_id = remote_logs[i].id,
-            .timestamp = timestamp,
-            .data_len = data_len,
-            .data = data
-        };
-        remote_log_send(&new_log);
+    else if(cfg->transport_type) {
+        log_transport = REMOTE_LOG_UART;
+        configure_uart(cfg->uart_num, cfg->baud_rate);
     }
-}
-
-
-esp_err_t remote_log_init(uint32_t log_frequency_ms, char *log_ip, uint32_t log_port)
-{
-    set_udp_ip_port(log_ip, log_port);
-    get_udp_ip_port();
-
-    // Start UDP tasks
-    xTaskCreatePinnedToCore(udp_client_task,"udp_client",4096,NULL,5,&udp_task_handle,0);
 
     const esp_timer_create_args_t periodic_timer_args = {
             .callback = remote_logs_cb,
@@ -87,9 +43,81 @@ esp_err_t remote_log_init(uint32_t log_frequency_ms, char *log_ip, uint32_t log_
     ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, log_frequency_ms*1000));
     ESP_LOGI(RMLOG_TAG, "Periodic timer started: %d ms", log_frequency_ms);
-    ESP_LOGI(RMLOG_TAG,"Remote logging started");
+    ESP_LOGI(RMLOG_TAG, "Remote logging started");
     
     return ESP_OK;
+}
+
+
+esp_err_t remote_log_send(remote_log_t *log)
+{
+    uint8_t log_packet[MAX_DATA_SIZE+1];
+
+    int index = 0;
+    log_packet[index++] = 0xA5;
+    log_packet[index++] = log->total_len;
+    log_packet[index++] = log->log_id.log_id;
+    log_packet[index++] = log->log_id.tag_len;
+    memcpy(log_packet+index,log->log_id.tag,log->log_id.tag_len);
+    index += log->log_id.tag_len;
+    log_packet[index++] = (log->timestamp) & 0xff;
+    log_packet[index++] = (log->timestamp >> 8) & 0xff;
+    log_packet[index++] = (log->timestamp >> 16) & 0xff;
+    log_packet[index++] = (log->timestamp >> 24) & 0xff;
+    log_packet[index++] = log->log_data_len;
+    memcpy(log_packet+index,log->log_data,log->log_data_len);
+    index += log->log_data_len;
+    log_packet[index++] = 0x0a; // EOL
+
+    log->total_len++;
+
+    ESP_LOGD(RMLOG_TAG,"index: %d, log->total_len: %d", index, log->total_len);
+    // ESP_LOG_BUFFER_HEX(RMLOG_TAG,log_packet,log->total_len);
+
+    if (log_transport == REMOTE_LOG_UDP) {
+        udp_write(log_packet, log->total_len);
+    }
+    else if (log_transport == REMOTE_LOG_UART)
+    {
+        remote_uart_send(log_packet, log->total_len);
+    }
+    else {
+        ESP_LOGE(RMLOG_TAG, "Transport not initialized!");
+    }
+    
+    return ESP_OK;
+}
+
+static void remote_logs_cb(void* arg)
+{
+    // Call all registered callbacks here
+    if(active_logs == 0) {
+        ESP_LOGI(RMLOG_TAG,"no logs registered");
+        return;
+    }
+
+    for(int i=0;i<active_logs;i++) {
+        ESP_LOGD(RMLOG_TAG,"creating log #%d",i);
+
+        uint8_t logging_data[MAX_DATA_SIZE];
+        size_t logging_data_len;
+        uint32_t timestamp = (uint32_t)(esp_timer_get_time()/1000);
+        esp_err_t err = remote_logs[i].data_log_cb(logging_data, &logging_data_len);
+        if(err != ESP_OK) {
+            ESP_LOGE(RMLOG_TAG, "Data logging callback error. Log ID: %i", remote_logs[i].id.log_id);
+        }
+
+        size_t total_len = 9 + remote_logs[i].id.tag_len + logging_data_len;
+
+        remote_log_t new_log = {
+            .total_len = total_len,
+            .log_id = remote_logs[i].id,
+            .timestamp = timestamp,
+            .log_data_len = logging_data_len,
+            .log_data = logging_data
+        };
+        remote_log_send(&new_log);
+    }
 }
 
 esp_err_t remote_log_register(remote_log_register_t log)

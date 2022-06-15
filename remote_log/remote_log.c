@@ -10,7 +10,7 @@
 static uint8_t active_logs = 0;
 remote_log_register_t remote_logs[MAX_LOGS];
 TaskHandle_t udp_task_handle = NULL;
-remote_log_transport_type log_transport = invalid;
+remote_log_transport_type log_transport = 0;
 
 const char *RMLOG_TAG = "Remote Log";
 
@@ -23,7 +23,7 @@ esp_err_t remote_log_init(uint32_t log_frequency_ms, remote_log_config *cfg)
 
     if(cfg->transport_type == REMOTE_LOG_UDP) {
         log_transport = REMOTE_LOG_UDP;
-        set_udp_ip_port("192.168.1.2", 5004);
+        set_udp_ip_port(cfg->ip, cfg->port);
         get_udp_ip_port();
 
         // Start UDP tasks
@@ -49,17 +49,16 @@ esp_err_t remote_log_init(uint32_t log_frequency_ms, remote_log_config *cfg)
 }
 
 
+
 esp_err_t remote_log_send(remote_log_t *log)
 {
-    uint8_t log_packet[MAX_DATA_SIZE+1];
+    uint8_t log_packet[MAX_LOG_SIZE];
 
     int index = 0;
     log_packet[index++] = 0xA5;
     log_packet[index++] = log->total_len;
-    log_packet[index++] = log->log_id.log_id;
-    log_packet[index++] = log->log_id.tag_len;
-    memcpy(log_packet+index,log->log_id.tag,log->log_id.tag_len);
-    index += log->log_id.tag_len;
+    log_packet[index++] = log->log_type;
+    log_packet[index++] = log->log_id;
     log_packet[index++] = (log->timestamp) & 0xff;
     log_packet[index++] = (log->timestamp >> 8) & 0xff;
     log_packet[index++] = (log->timestamp >> 16) & 0xff;
@@ -68,7 +67,6 @@ esp_err_t remote_log_send(remote_log_t *log)
     memcpy(log_packet+index,log->log_data,log->log_data_len);
     index += log->log_data_len;
     log_packet[index++] = 0x0a; // EOL
-
     log->total_len++;
 
     ESP_LOGD(RMLOG_TAG,"index: %d, log->total_len: %d", index, log->total_len);
@@ -104,29 +102,62 @@ static void remote_logs_cb(void* arg)
         uint32_t timestamp = (uint32_t)(esp_timer_get_time()/1000);
         esp_err_t err = remote_logs[i].data_log_cb(logging_data, &logging_data_len);
         if(err != ESP_OK) {
-            ESP_LOGE(RMLOG_TAG, "Data logging callback error. Log ID: %i", remote_logs[i].id.log_id);
+            ESP_LOGE(RMLOG_TAG, "Data logging callback error. Log ID: %i", remote_logs[i].log_id);
         }
 
-        size_t total_len = 9 + remote_logs[i].id.tag_len + logging_data_len;
+        size_t total_len = 9 + logging_data_len;
 
         remote_log_t new_log = {
-            .total_len = total_len,
-            .log_id = remote_logs[i].id,
+            .log_type = REMOTE_LOG_DATA,
+            .log_id = remote_logs[i].log_id,
             .timestamp = timestamp,
             .log_data_len = logging_data_len,
-            .log_data = logging_data
+            .log_data = logging_data,
+            .total_len = total_len,
         };
         remote_log_send(&new_log);
+
+        remote_logs[i].total_times_called++;
+
+        if(remote_logs[i].called_counter++ > ID_SEND_INTERVAL) { // resend ID packet
+            remote_logs[i].called_counter = 0;
+
+            remote_log_t id_log = {
+                .log_type = REMOTE_DATA_ID,
+                .log_id = remote_logs[i].log_id,
+                .timestamp = 0,
+                .log_data_len = remote_logs[i].tag_len,
+                .log_data = (uint8_t*)remote_logs[i].tag,
+                .total_len = 9 + remote_logs[i].tag_len
+            };
+            remote_log_send(&id_log);
+        }
     }
 }
 
 esp_err_t remote_log_register(remote_log_register_t log)
 {
-    if(!(active_logs < MAX_LOGS)) {
-        ESP_LOGE(RMLOG_TAG,"Too many logs");
+    if(log_transport == 0) {
+        ESP_LOGE(RMLOG_TAG,"module not initialized!");
         return ESP_FAIL;
     }
+    if(!(active_logs < MAX_LOGS)) {
+        ESP_LOGE(RMLOG_TAG,"Can't register more logs - too many");
+        return ESP_FAIL;
+    }
+    log.called_counter = 0; // reset call counter
+    log.total_times_called = 0;
     remote_logs[active_logs++] = log;
+    
+    remote_log_t initial_log = {
+            .log_type = REMOTE_DATA_ID,
+            .log_id = log.log_id,
+            .timestamp = 0,
+            .log_data_len = log.tag_len,
+            .log_data = (uint8_t*)log.tag,
+            .total_len = 9 + log.tag_len
+        };
+    remote_log_send(&initial_log);
 
     return ESP_OK;
 }

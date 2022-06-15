@@ -20,8 +20,8 @@
 #include "esp_log.h"
 #include "esp_err.h"
 
-#define ECHO_TEST_TXD (4)
-#define ECHO_TEST_RXD (5)
+#define ECHO_TEST_TXD (17)
+#define ECHO_TEST_RXD (18)
 #define ECHO_TEST_RTS (UART_PIN_NO_CHANGE)
 #define ECHO_TEST_CTS (UART_PIN_NO_CHANGE)
 

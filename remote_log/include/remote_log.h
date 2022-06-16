@@ -10,7 +10,7 @@
 #define MAX_DATA_SIZE 100
 #define MAX_LOG_SIZE 120
 
-#define ID_SEND_INTERVAL 4
+#define ID_SEND_INTERVAL 100
 
 // typedef void *(*remote_cbs_t)(void);
 

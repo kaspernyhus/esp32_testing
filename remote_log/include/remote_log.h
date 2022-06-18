@@ -11,6 +11,7 @@
 #define MAX_LOG_SIZE 150
 
 #define ID_SEND_INTERVAL 100
+#define EVENT_QUEUE_SZ 30
 
 
 typedef enum {
@@ -20,7 +21,8 @@ typedef enum {
 
 typedef enum {
   REMOTE_LOG_ID,
-  REMOTE_LOG_DATA
+  REMOTE_LOG_DATA,
+  REMOTE_LOG_EVENT
 } remote_log_type;
 
 typedef struct {
@@ -51,6 +53,20 @@ typedef struct {
   uint16_t total_times_called;
 } remote_log_register_t;
 
+typedef struct {
+  uint8_t event_id;
+  char tag[20];
+  uint16_t called_counter;
+  uint16_t total_times_called;
+} remote_log_event_register_t;
+
+typedef struct {
+  uint8_t event_id;
+  uint32_t timestamp;
+} remote_log_event_t;
 
 esp_err_t remote_log_init(remote_log_config *cfg);
 esp_err_t remote_log_register(remote_log_register_t log);
+
+esp_err_t remote_log_register_event(remote_log_event_register_t event);
+esp_err_t remote_log_record_event(uint8_t event_id);

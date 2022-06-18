@@ -1,5 +1,6 @@
 #include "remote_log.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "esp_err.h"
@@ -8,14 +9,19 @@
 
 
 static uint8_t active_logs = 0;
+static uint8_t active_events = 0;
 remote_log_register_t remote_logs[MAX_LOGS];
+remote_log_event_t remote_events[MAX_LOGS];
 TaskHandle_t udp_task_handle = NULL;
+QueueHandle_t event_q;
 remote_log_transport_type log_transport = 0;
 
 const char *RMLOG_TAG = "Remote Log";
 
 
 static void remote_logs_cb(void* arg);
+static void call_registered_callbacks(void);
+static void check_for_new_events(void);
 
 
 esp_err_t remote_log_init(remote_log_config *cfg)
@@ -44,6 +50,14 @@ esp_err_t remote_log_init(remote_log_config *cfg)
     ESP_LOGI(RMLOG_TAG, "Periodic timer started: %d ms", cfg->log_frequency_ms);
     ESP_LOGI(RMLOG_TAG, "Remote logging started");
     
+    // Create message queue for recording events. Stores an event ID and a timestamp
+    event_q = xQueueCreate(EVENT_QUEUE_SZ, sizeof(remote_log_event_record_t));
+    if(event_q == NULL) {
+        ESP_LOGE(RMLOG_TAG, "Failed to initialize event queue");
+        return ESP_FAIL;
+    }
+    ESP_LOGI(RMLOG_TAG, "Event queue created");
+
     return ESP_OK;
 }
 
@@ -87,50 +101,15 @@ esp_err_t remote_log_send(remote_log_t *log)
 
 static void remote_logs_cb(void* arg)
 {
-    // Call all registered callbacks here
     if(active_logs == 0) {
-        ESP_LOGI(RMLOG_TAG,"no logs registered");
-        return;
+        ESP_LOGD(RMLOG_TAG, "no logs registered");
+    }
+    if(active_events == 0) {
+        ESP_LOGD(RMLOG_TAG, "no events registered");
     }
 
-    for(int i=0;i<active_logs;i++) {
-        ESP_LOGD(RMLOG_TAG,"creating log #%d, id: %d",i,remote_logs[i].log_id);
-
-        uint8_t logging_data[MAX_DATA_SIZE];
-        size_t logging_data_len;
-        uint32_t timestamp = (uint32_t)(esp_timer_get_time()/1000);
-        esp_err_t err = remote_logs[i].data_log_cb(logging_data, &logging_data_len);
-        if(err != ESP_OK) {
-            ESP_LOGE(RMLOG_TAG, "Data logging callback error. Log ID: %i", remote_logs[i].log_id);
-        }
-
-        size_t total_len = 9 + logging_data_len;
-
-        remote_log_t new_log = {
-            .log_type = REMOTE_LOG_DATA,
-            .log_id = remote_logs[i].log_id,
-            .timestamp = timestamp,
-            .log_data_len = logging_data_len,
-            .log_data = logging_data,
-            .total_len = total_len,
-        };
-        remote_log_send(&new_log);
-
-        remote_logs[i].total_times_called++;
-
-        if(remote_logs[i].called_counter++ > ID_SEND_INTERVAL) { // resend ID packet
-            remote_logs[i].called_counter = 0;
-            remote_log_t id_log = {
-                .log_type = REMOTE_DATA_ID,
-                .log_id = remote_logs[i].log_id,
-                .timestamp = timestamp,
-                .log_data_len = 20,
-                .log_data = (uint8_t*)remote_logs[i].tag,
-                .total_len = 9 + 20
-            };
-            remote_log_send(&id_log);
-        }
-    }
+    call_registered_callbacks();
+    check_for_new_events();
 }
 
 esp_err_t remote_log_register(remote_log_register_t log)
@@ -160,3 +139,92 @@ esp_err_t remote_log_register(remote_log_register_t log)
     return ESP_OK;
 }
 
+esp_err_t remote_log_register_event(remote_log_event_t event)
+{
+    if(log_transport == 0) {
+        ESP_LOGE(RMLOG_TAG,"module not initialized!");
+        return ESP_FAIL;
+    }
+    if(!(active_events < MAX_LOGS)) {
+        ESP_LOGE(RMLOG_TAG,"Can't register more events - too many");
+        return ESP_FAIL;
+    }
+
+    event.called_counter = 0; // reset call counter
+    event.total_times_called = 0;
+    remote_events[active_events++] = event;
+
+    return ESP_OK;
+}
+
+esp_err_t remote_log_record_event(uint8_t event_id)
+{
+    uint32_t timestamp = (uint32_t)(esp_timer_get_time()/1000);
+    remote_log_event_record_t event = {
+        .event_id = event_id,
+        .timestamp = timestamp
+    };
+    xQueueSend(event_q, event, 0); // don't block
+
+    return ESP_OK;
+}
+
+static void call_registered_callbacks(void)
+{
+    for(int i=0;i<active_logs;i++) {
+        ESP_LOGD(RMLOG_TAG,"creating log #%d, id: %d",i,remote_logs[i].log_id);
+
+        uint8_t logging_data[MAX_DATA_SIZE];
+        size_t logging_data_len;
+        uint32_t timestamp = (uint32_t)(esp_timer_get_time()/1000);
+        esp_err_t err = remote_logs[i].data_log_cb(logging_data, &logging_data_len);
+        if(err != ESP_OK) {
+            ESP_LOGE(RMLOG_TAG, "Data logging callback error. Log ID: %i", remote_logs[i].log_id);
+        }
+        size_t total_len = 9 + logging_data_len;
+
+        remote_log_t new_log = {
+            .log_type = REMOTE_LOG_DATA,
+            .log_id = remote_logs[i].log_id,
+            .timestamp = timestamp,
+            .log_data_len = logging_data_len,
+            .log_data = logging_data,
+            .total_len = total_len,
+        };
+        remote_log_send(&new_log);
+
+        remote_logs[i].total_times_called++;
+
+        // if time, resend ID packet
+        if(remote_logs[i].called_counter++ > ID_SEND_INTERVAL) {
+            remote_logs[i].called_counter = 0;
+            remote_log_t id_log = {
+                .log_type = REMOTE_LOG_ID,
+                .log_id = remote_logs[i].log_id,
+                .timestamp = timestamp,
+                .log_data_len = 20,
+                .log_data = (uint8_t*)remote_logs[i].tag,
+                .total_len = 9 + 20
+            };
+            remote_log_send(&id_log);
+        }
+    }
+}
+
+static void check_for_new_events(void) {
+    while(uxQueueMessagesWaiting(event_q)) {
+        remote_log_event_record_t event;
+        xQueueReceive(event_q, &event, 0); // don't block
+        if(event) {
+            remote_log_t log = {
+                .log_type = REMOTE_LOG_EVENT,
+                .log_id = remote_events[event.event_id].event_id,
+                .timestamp = event.timestamp,
+                .log_data_len = 20,
+                .log_data = (uint8_t*)remote_events[event.event_id].tag,
+                .total_len = 9 + 20
+            };
+            remote_log_send(&log);
+        }
+    }
+}

@@ -11,7 +11,7 @@
 static uint8_t active_logs = 0;
 static uint8_t active_events = 0;
 remote_log_register_t remote_logs[MAX_LOGS];
-remote_log_event_t remote_events[MAX_LOGS];
+remote_log_event_register_t remote_events[MAX_LOGS];
 TaskHandle_t udp_task_handle = NULL;
 QueueHandle_t event_q;
 remote_log_transport_type log_transport = 0;
@@ -51,7 +51,7 @@ esp_err_t remote_log_init(remote_log_config *cfg)
     ESP_LOGI(RMLOG_TAG, "Remote logging started");
     
     // Create message queue for recording events. Stores an event ID and a timestamp
-    event_q = xQueueCreate(EVENT_QUEUE_SZ, sizeof(remote_log_event_record_t));
+    event_q = xQueueCreate(EVENT_QUEUE_SZ, sizeof(remote_log_event_t));
     if(event_q == NULL) {
         ESP_LOGE(RMLOG_TAG, "Failed to initialize event queue");
         return ESP_FAIL;
@@ -139,7 +139,7 @@ esp_err_t remote_log_register(remote_log_register_t log)
     return ESP_OK;
 }
 
-esp_err_t remote_log_register_event(remote_log_event_t event)
+esp_err_t remote_log_register_event(remote_log_event_register_t event)
 {
     if(log_transport == 0) {
         ESP_LOGE(RMLOG_TAG,"module not initialized!");
@@ -160,11 +160,11 @@ esp_err_t remote_log_register_event(remote_log_event_t event)
 esp_err_t remote_log_record_event(uint8_t event_id)
 {
     uint32_t timestamp = (uint32_t)(esp_timer_get_time()/1000);
-    remote_log_event_record_t event = {
+    remote_log_event_t event = {
         .event_id = event_id,
         .timestamp = timestamp
     };
-    xQueueSend(event_q, event, 0); // don't block
+    xQueueSend(event_q, (void *)&event, 0); // don't block
 
     return ESP_OK;
 }
@@ -213,15 +213,16 @@ static void call_registered_callbacks(void)
 
 static void check_for_new_events(void) {
     while(uxQueueMessagesWaiting(event_q)) {
-        remote_log_event_record_t event;
+        remote_log_event_t *event;
         xQueueReceive(event_q, &event, 0); // don't block
-        if(event) {
+        
+        if(event != NULL) {
             remote_log_t log = {
                 .log_type = REMOTE_LOG_EVENT,
-                .log_id = remote_events[event.event_id].event_id,
-                .timestamp = event.timestamp,
+                .log_id = remote_events[event->event_id].event_id,
+                .timestamp = event->timestamp,
                 .log_data_len = 20,
-                .log_data = (uint8_t*)remote_events[event.event_id].tag,
+                .log_data = (uint8_t*)remote_events[event->event_id].tag,
                 .total_len = 9 + 20
             };
             remote_log_send(&log);

@@ -26,7 +26,6 @@ void app_main(void)
     remote_log_register_t new_log = {
         .log_id = 0x01,
         .tag = "Heap tracking",
-        .tag_len = 14,
         .data_log_cb = log_heap
     };
     remote_log_register(new_log);

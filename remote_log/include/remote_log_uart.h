@@ -20,10 +20,10 @@
 #include "esp_log.h"
 #include "esp_err.h"
 
-#define ECHO_TEST_TXD (17)
-#define ECHO_TEST_RXD (18)
-#define ECHO_TEST_RTS (UART_PIN_NO_CHANGE)
-#define ECHO_TEST_CTS (UART_PIN_NO_CHANGE)
+#define REMOTE_LOG_TXD (17)
+#define REMOTE_LOG_RXD (18)
+#define REMOTE_LOG_RTS (UART_PIN_NO_CHANGE)
+#define REMOTE_LOG_CTS (UART_PIN_NO_CHANGE)
 
 esp_err_t configure_uart(uint8_t uart_num, uint32_t baud_rate);
 esp_err_t remote_uart_send(const void *payload, size_t len);

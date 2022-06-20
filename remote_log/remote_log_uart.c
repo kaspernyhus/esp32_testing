@@ -25,7 +25,7 @@ esp_err_t configure_uart(uint8_t uart_num, uint32_t baud_rate)
 
     ESP_ERROR_CHECK(uart_driver_install(uart_num, 2048 * 2, 0, 0, NULL, intr_alloc_flags));
     ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(uart_num, ECHO_TEST_TXD, ECHO_TEST_RXD, ECHO_TEST_RTS, ECHO_TEST_CTS));
+    ESP_ERROR_CHECK(uart_set_pin(uart_num, REMOTE_LOG_TXD, REMOTE_LOG_RXD, REMOTE_LOG_RTS, REMOTE_LOG_CTS));
     
     ESP_LOGI("remote log", "UART%d configured @%d baud", uart_num, baud_rate);
     return ESP_OK;

@@ -66,7 +66,7 @@ typedef struct {
 } remote_log_event_t;
 
 esp_err_t remote_log_init(remote_log_config *cfg);
-esp_err_t remote_log_register(remote_log_register_t log);
+esp_err_t remote_log_register_log(remote_log_register_t log);
 
 esp_err_t remote_log_register_event(remote_log_event_register_t event);
 esp_err_t remote_log_record_event(uint8_t event_id);

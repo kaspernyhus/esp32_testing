@@ -4,9 +4,88 @@
 #include "sig_gen.h"
 #include "esp_log.h"
 #include "esp_random.h"
+#include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
 
 
 static const char *SIG_TAG = "sigGen";
+sig_gen_t L_sig;
+sig_gen_t R_sig;
+
+SemaphoreHandle_t xMutex = NULL;
+static int timer_initialized = 0;
+
+static void _timer_cb(void* arg)
+{
+    if(xMutex != NULL) {
+        xSemaphoreGive(xMutex);
+    }
+}
+
+
+void sig_gen_ez_1k_stereo_init(uint16_t sample_rate, bytes_per_sample_t bits, callback_enable_t cb, uint16_t cb_interval)
+{
+    sig_gen_config_t cfg = {
+        .gen_source = SINE_LUT,
+        .lut_freq = LUT_FREQ_1K,
+        .sample_rate = sample_rate,
+        .bytes_per_sample = bits,
+        .enable_cb = cb,
+        .cb_interval = cb_interval
+    };
+    sig_gen_init(&L_sig, &cfg);
+    sig_gen_init(&R_sig, &cfg);
+}
+
+void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
+{
+    sg->gen_source = cfg->gen_source;
+    sg->lut_freq = cfg->lut_freq;
+    sg->bytes_per_sample = cfg->bytes_per_sample;
+    sg->sample_rate = cfg->sample_rate;
+    sg->endianess = cfg->endianess;
+    sg->_amplitude = floor((pow(2,24)-1)/2) * cfg->amplitude;
+    sg->_freq = cfg->freq;
+    sg->_deltaTime = (1.0 / cfg->sample_rate);
+    sg->_phase = cfg->phase;
+    sg->_time = 0.0;
+    sg->_double_pi = 2.0*M_PI;
+    sg->initialized = 1;
+    sg->cb_enabled = cfg->enable_cb;
+
+    // Generate signal from LUT - create obj on the heap
+    if(sg->gen_source == SINE_LUT) {
+        sg->lut_gen = (lut_gen_t *)malloc(sizeof(lut_gen_t));
+        lut_gen_init(sg->lut_gen, sg->lut_freq);
+        ESP_LOGI(SIG_TAG,"Signal Generator Initialized. LUT#%d. LUT size: %d. Bytes/sample: %d. Freq: %f", sg->lut_freq, sg->lut_gen->lut_size, sg->bytes_per_sample, (float)(sg->sample_rate)/(sg->lut_gen->lut_size));
+    }
+    // Generate signal from calculation
+    else {
+        ESP_LOGI(SIG_TAG,"Signal Generator Initialized. sampleRate:%d, ampl:%f, freq:%f, deltaT:%f, phase:%f", sg->sample_rate,sg->_amplitude,sg->_freq,sg->_deltaTime,sg->_phase);
+    }
+    // Spawn timer task to drive callback
+    // if(!timer_initialized) {
+    //     if(sg->cb_enabled) {
+    //         // create timer
+    //         const esp_timer_create_args_t periodic_timer_args = {
+    //             .callback = _timer_cb,
+    //             .name = "periodic"
+    //         };
+    //         esp_timer_handle_t periodic_timer;
+    //         ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
+    //         esp_timer_start_periodic(periodic_timer, cfg->cb_interval*1000);        
+    //         ESP_LOGI(SIG_TAG, "Periodic callback started. Interval: %d ms", cfg->cb_interval);
+
+    //         xMutex = xSemaphoreCreateMutex();
+    //         if( xMutex != NULL ) {
+    //             ESP_LOGI(SIG_TAG, "Mutex created");
+    //         }
+    //         timer_initialized = 1;
+    //     }
+    // }
+}
 
 
 // Calculate or look up sine sample
@@ -31,34 +110,6 @@ uint32_t _sig_gen_get_sample(sig_gen_t *sg)
             ESP_LOGE(SIG_TAG,"Signal Generator Error - no generator source selected");
             return 0;
     }   
-}
-
-
-void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
-{
-    sg->gen_source = cfg->gen_source;
-    sg->lut_freq = cfg->lut_freq;
-    sg->bytes_per_sample = cfg->bytes_per_sample;
-    sg->sample_rate = cfg->sample_rate;
-    sg->endianess = cfg->endianess;
-    sg->_amplitude = floor((pow(2,24)-1)/2) * cfg->amplitude;
-    sg->_freq = cfg->freq;
-    sg->_deltaTime = (1.0 / cfg->sample_rate);
-    sg->_phase = cfg->phase;
-    sg->_time = 0.0;
-    sg->_double_pi = 2.0*M_PI;
-    sg->initialized = 1;
-
-    // Generate signal from LUT - create obj on the heap
-    if(sg->gen_source == SINE_LUT) {
-        sg->lut_gen = (lut_gen_t *)malloc(sizeof(lut_gen_t));
-        lut_gen_init(sg->lut_gen, sg->lut_freq);
-        ESP_LOGI(SIG_TAG,"Signal Generator Initialized. LUT#%d. LUT size: %d. Bytes/sample: %d. Freq: %f", sg->lut_freq, sg->lut_gen->lut_size, sg->bytes_per_sample, (float)(sg->sample_rate)/(sg->lut_gen->lut_size));
-    }
-    // Generate signal from calculation
-    else {
-        ESP_LOGI(SIG_TAG,"Signal Generator Initialized. sampleRate:%d, ampl:%f, freq:%f, deltaT:%f, phase:%f", sg->sample_rate,sg->_amplitude,sg->_freq,sg->_deltaTime,sg->_phase);
-    }
 }
 
 // Outputs a mono sine
@@ -280,4 +331,22 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
     return out_index;
 }
 
+void sig_gen_ez_read(uint8_t *out_data, size_t samples)
+{
+    if((!L_sig.initialized) | (!R_sig.initialized)) {
+        ESP_LOGE(SIG_TAG, "ERROR: Signal generator not initialized!");
+        return;
+    }
 
+    // // Blocks here if callback is enabled
+    // if(L_sig.cb_enabled | R_sig.cb_enabled) {
+    //     if(xMutex != NULL) {
+    //         if(xSemaphoreTake(xMutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+    //             ESP_LOGE(SIG_TAG, "ERROR: No callback received");
+    //             return;
+    //         }
+    //     }
+    // }
+
+    sig_gen_output_combine(&L_sig, &R_sig, out_data, samples);
+}

@@ -26,7 +26,7 @@ sig_gen_t sineR;
 
 sig_gen_config_t cfg = {
     .gen_source = CALC_GEN,
-    .bytes_per_sample = 2,
+    .bytes_per_sample = SIG_GEN_24BIT,
     .sample_rate = SAMPLE_RATE,
     .amplitude = 1.0,
     .freq = 1000,
@@ -49,7 +49,7 @@ sig_gen_t sineR;
 sig_gen_config_t cfg = {
     .gen_source = LUT_GEN,
     .lut_freq = LUT_FREQ_1K,
-    .bytes_per_sample = 2,
+    .bytes_per_sample = SIG_GEN_16BIT,
     .sample_rate = SAMPLE_RATE,
 };
 sig_gen_init(&sineL, &cfg);

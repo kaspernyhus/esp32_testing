@@ -352,12 +352,13 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
     return out_index;
 }
 
-void sig_gen_ez_read(uint8_t *out_data, size_t samples)
+void sig_gen_ez_read(uint8_t *out_data, size_t samples, size_t *bytes_read)
 {
     if((!L_sig.initialized) | (!R_sig.initialized)) {
         ESP_LOGE(SIG_TAG, "ERROR: Signal generator not initialized!");
         return;
     }
 
-    sig_gen_output_combine(&L_sig, &R_sig, out_data, samples);
+    size_t bytes = sig_gen_output_combine(&L_sig, &R_sig, out_data, samples);
+    *bytes_read = bytes;
 }

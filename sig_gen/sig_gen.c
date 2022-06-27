@@ -14,13 +14,13 @@ static const char *SIG_TAG = "sigGen";
 sig_gen_t L_sig;
 sig_gen_t R_sig;
 
-SemaphoreHandle_t xMutex = NULL;
+SemaphoreHandle_t xTaskSem = NULL;
 static int timer_initialized = 0;
 
 static void _timer_cb(void* arg)
 {
-    if(xMutex != NULL) {
-        xSemaphoreGive(xMutex);
+    if(xTaskSem != NULL) {
+        xSemaphoreGive(xTaskSem);
     }
 }
 
@@ -66,25 +66,25 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
         ESP_LOGI(SIG_TAG,"Signal Generator Initialized. sampleRate:%d, ampl:%f, freq:%f, deltaT:%f, phase:%f", sg->sample_rate,sg->_amplitude,sg->_freq,sg->_deltaTime,sg->_phase);
     }
     // Spawn timer task to drive callback
-    // if(!timer_initialized) {
-    //     if(sg->cb_enabled) {
-    //         // create timer
-    //         const esp_timer_create_args_t periodic_timer_args = {
-    //             .callback = _timer_cb,
-    //             .name = "periodic"
-    //         };
-    //         esp_timer_handle_t periodic_timer;
-    //         ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
-    //         esp_timer_start_periodic(periodic_timer, cfg->cb_interval*1000);        
-    //         ESP_LOGI(SIG_TAG, "Periodic callback started. Interval: %d ms", cfg->cb_interval);
+    if(!timer_initialized) {
+        if(sg->cb_enabled) {
+            // create timer
+            const esp_timer_create_args_t periodic_timer_args = {
+                .callback = _timer_cb,
+                .name = "periodic"
+            };
+            esp_timer_handle_t periodic_timer;
+            ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
+            esp_timer_start_periodic(periodic_timer, cfg->cb_interval*1000);        
+            ESP_LOGI(SIG_TAG, "Periodic callback started. Interval: %d ms", cfg->cb_interval);
 
-    //         xMutex = xSemaphoreCreateMutex();
-    //         if( xMutex != NULL ) {
-    //             ESP_LOGI(SIG_TAG, "Mutex created");
-    //         }
-    //         timer_initialized = 1;
-    //     }
-    // }
+            xTaskSem = xSemaphoreCreateBinary();
+            if( xTaskSem != NULL ) {
+                ESP_LOGI(SIG_TAG, "Mutex created");
+            }
+            timer_initialized = 1;
+        }
+    }
 }
 
 
@@ -338,15 +338,15 @@ void sig_gen_ez_read(uint8_t *out_data, size_t samples)
         return;
     }
 
-    // // Blocks here if callback is enabled
-    // if(L_sig.cb_enabled | R_sig.cb_enabled) {
-    //     if(xMutex != NULL) {
-    //         if(xSemaphoreTake(xMutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
-    //             ESP_LOGE(SIG_TAG, "ERROR: No callback received");
-    //             return;
-    //         }
-    //     }
-    // }
+    // Blocks here if callback is enabled
+    if(L_sig.cb_enabled | R_sig.cb_enabled) {
+        if(xTaskSem != NULL) {
+            if(xSemaphoreTake(xTaskSem, pdMS_TO_TICKS(1000)) != pdTRUE) {
+                ESP_LOGE(SIG_TAG, "ERROR: No callback received");
+                return;
+            }
+        }
+    }
 
     sig_gen_output_combine(&L_sig, &R_sig, out_data, samples);
 }

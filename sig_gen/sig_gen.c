@@ -25,15 +25,15 @@ static void _timer_cb(void* arg)
 }
 
 
-void sig_gen_ez_1k_stereo_init(uint16_t sample_rate, bytes_per_sample_t bits, callback_enable_t cb, uint16_t cb_interval)
+void sig_gen_ez_1k_stereo_init(uint16_t sample_rate, bytes_per_sample_t bits, callback_enable_t cb_enable, uint16_t cb_interval_ms)
 {
     sig_gen_config_t cfg = {
         .gen_source = SINE_LUT,
         .lut_freq = LUT_FREQ_1K,
         .sample_rate = sample_rate,
         .bytes_per_sample = bits,
-        .enable_cb = cb,
-        .cb_interval = cb_interval
+        .enable_cb = cb_enable,
+        .cb_interval = cb_interval_ms
     };
     sig_gen_init(&L_sig, &cfg);
     sig_gen_init(&R_sig, &cfg);
@@ -76,11 +76,11 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
             esp_timer_handle_t periodic_timer;
             ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
             esp_timer_start_periodic(periodic_timer, cfg->cb_interval*1000);        
-            ESP_LOGI(SIG_TAG, "Periodic callback started. Interval: %d ms", cfg->cb_interval);
+            ESP_LOGI(SIG_TAG, "Periodic audio callback started. Interval: %d ms", cfg->cb_interval);
 
             xTaskSem = xSemaphoreCreateBinary();
             if( xTaskSem != NULL ) {
-                ESP_LOGI(SIG_TAG, "Mutex created");
+                ESP_LOGI(SIG_TAG, "Semaphore created");
             }
             timer_initialized = 1;
         }
@@ -120,6 +120,17 @@ size_t sig_gen_output(sig_gen_t *sg, uint8_t *out_data, size_t samples)
         ESP_LOGE(SIG_TAG, "ERROR: Signal generator not initialized!");
         return 0;
     }
+
+    // Blocks here if callback is enabled
+    if(L_sig.cb_enabled | R_sig.cb_enabled) {
+        if(xTaskSem != NULL) {
+            if(xSemaphoreTake(xTaskSem, pdMS_TO_TICKS(1000)) != pdTRUE) {
+                ESP_LOGE(SIG_TAG, "ERROR: No callback received");
+                return 0;
+            }
+        }
+    }
+
     size_t out_index = 0;
     
     switch (sg->bytes_per_sample) {
@@ -194,6 +205,16 @@ size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_dat
     if((!sg_l->initialized) | (!sg_r->initialized)) {
         ESP_LOGE(SIG_TAG, "ERROR: Signal generator not initialized!");
         return 0;
+    }
+
+    // Blocks here if callback is enabled
+    if(L_sig.cb_enabled | R_sig.cb_enabled) {
+        if(xTaskSem != NULL) {
+            if(xSemaphoreTake(xTaskSem, pdMS_TO_TICKS(1000)) != pdTRUE) {
+                ESP_LOGE(SIG_TAG, "ERROR: No callback received");
+                return 0;
+            }
+        }
     }
 
     uint8_t bps_combined = sg_l->bytes_per_sample | sg_r->bytes_per_sample;
@@ -336,16 +357,6 @@ void sig_gen_ez_read(uint8_t *out_data, size_t samples)
     if((!L_sig.initialized) | (!R_sig.initialized)) {
         ESP_LOGE(SIG_TAG, "ERROR: Signal generator not initialized!");
         return;
-    }
-
-    // Blocks here if callback is enabled
-    if(L_sig.cb_enabled | R_sig.cb_enabled) {
-        if(xTaskSem != NULL) {
-            if(xSemaphoreTake(xTaskSem, pdMS_TO_TICKS(1000)) != pdTRUE) {
-                ESP_LOGE(SIG_TAG, "ERROR: No callback received");
-                return;
-            }
-        }
     }
 
     sig_gen_output_combine(&L_sig, &R_sig, out_data, samples);

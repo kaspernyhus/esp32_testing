@@ -80,7 +80,7 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg)
 
             xTaskSem = xSemaphoreCreateBinary();
             if( xTaskSem != NULL ) {
-                ESP_LOGI(SIG_TAG, "Semaphore created");
+                ESP_LOGD(SIG_TAG, "Semaphore created");
             }
             timer_initialized = 1;
         }

@@ -4,7 +4,7 @@ static const char *TAG = "Remote Log, uart";
 
 uint8_t remote_log_uart_num = 0;
 
-esp_err_t configure_uart(uint8_t uart_num, uint32_t baud_rate)
+esp_err_t configure_uart(uint8_t uart_num, uint32_t baud_rate, uint8_t tx_pin, uint8_t rx_pin)
 {
     remote_log_uart_num = uart_num;
 
@@ -26,7 +26,7 @@ esp_err_t configure_uart(uint8_t uart_num, uint32_t baud_rate)
 
     ESP_ERROR_CHECK(uart_driver_install(uart_num, 2048 * 2, 0, 0, NULL, intr_alloc_flags));
     ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(uart_num, REMOTE_LOG_TXD, REMOTE_LOG_RXD, REMOTE_LOG_RTS, REMOTE_LOG_CTS));
+    ESP_ERROR_CHECK(uart_set_pin(uart_num, tx_pin, rx_pin, REMOTE_LOG_RTS, REMOTE_LOG_CTS));
     
     ESP_LOGI(TAG, "UART%d configured @%d baud", uart_num, baud_rate);
     return ESP_OK;

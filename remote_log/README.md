@@ -7,10 +7,12 @@ The module is initialized with a transport type: `REMOTE_LOG_UART / REMOTE_LOG_U
 log_frequency_ms is the interval the callbacks will be called with and also transported to the python app.
 
 ```
-remote_log_config cfg = {
+    remote_log_config cfg = {
         .transport_type = REMOTE_LOG_UART,
         .uart_num = 1,
-        .baud_rate = 9600,
+        .baud_rate = 115200,
+        .tx_pin = 17,
+        .rx_pin = 18,
         .log_frequency_ms = 100
     };
     remote_log_init(&cfg);

@@ -37,7 +37,7 @@ esp_err_t remote_log_init(remote_log_config *cfg)
 
     else if(cfg->transport_type) {
         log_transport = REMOTE_LOG_UART;
-        configure_uart(cfg->uart_num, cfg->baud_rate);
+        configure_uart(cfg->uart_num, cfg->baud_rate, cfg->tx_pin, cfg->rx_pin);
     }
 
     const esp_timer_create_args_t periodic_timer_args = {

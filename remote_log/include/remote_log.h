@@ -34,6 +34,8 @@ typedef struct {
   // for UART
   uint8_t uart_num;
   uint32_t baud_rate;
+  uint8_t tx_pin;
+  uint8_t rx_pin;
 } remote_log_config;
 
 typedef struct {

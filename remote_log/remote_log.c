@@ -12,7 +12,7 @@ static uint8_t active_logs = 0;
 static uint8_t active_events = 0;
 remote_log_register_t remote_logs[MAX_LOGS];
 remote_log_event_register_t remote_events[MAX_LOGS];
-TaskHandle_t udp_task_handle = NULL;
+TaskHandle_t remote_log_udp_task_handle = NULL;
 QueueHandle_t event_q;
 remote_log_transport_type log_transport = 0;
 
@@ -28,11 +28,11 @@ esp_err_t remote_log_init(remote_log_config *cfg)
 {
     if(cfg->transport_type == REMOTE_LOG_UDP) {
         log_transport = REMOTE_LOG_UDP;
-        set_udp_ip_port(cfg->ip, cfg->port);
-        get_udp_ip_port();
+        remote_log_set_udp_ip_port(cfg->ip, cfg->port);
+        remote_log_get_udp_ip_port();
 
         // Start UDP tasks
-        xTaskCreatePinnedToCore(udp_client_task,"udp_client",4096,NULL,5,&udp_task_handle,0);
+        xTaskCreatePinnedToCore(remote_log_udp_client_task,"udp_client",4096,NULL,5,&remote_log_udp_task_handle,0);
     }
 
     else if(cfg->transport_type) {
@@ -86,7 +86,7 @@ esp_err_t remote_log_send(remote_log_t *log)
     // ESP_LOG_BUFFER_HEX(TAG,log_packet,log->total_len);
 
     if (log_transport == REMOTE_LOG_UDP) {
-        udp_write(log_packet, log->total_len);
+        remote_log_udp_write(log_packet, log->total_len);
     }
     else if (log_transport == REMOTE_LOG_UART)
     {

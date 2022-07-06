@@ -28,7 +28,7 @@ typedef struct {
 } udp_data_t;
 
 
-esp_err_t udp_write(const void *payload, size_t len);
-void udp_client_task(void *pvParameters);
-void set_udp_ip_port(char *ip, uint32_t port);
-void get_udp_ip_port(void);
+esp_err_t remote_log_udp_write(const void *payload, size_t len);
+void remote_log_udp_client_task(void *pvParameters);
+void remote_log_set_udp_ip_port(char *ip, uint32_t port);
+void remote_log_get_udp_ip_port(void);

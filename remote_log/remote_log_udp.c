@@ -11,18 +11,18 @@ char host_ip[13] = "";
 uint32_t host_port = 0;
 
 
-void set_udp_ip_port(char *ip, uint32_t port)
+void remote_log_set_udp_ip_port(char *ip, uint32_t port)
 {
     memcpy(host_ip,ip,13);
     host_port = port;
 }
 
-void get_udp_ip_port(void)
+void remote_log_get_udp_ip_port(void)
 {
     ESP_LOGI(TAG,"IP: %s : %d", host_ip, host_port);
 }
 
-esp_err_t udp_write(const void *payload, size_t len) {
+esp_err_t remote_log_udp_write(const void *payload, size_t len) {
     int err = sendto(sock, payload, len, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
     if (err < 0) {
         ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
@@ -31,7 +31,7 @@ esp_err_t udp_write(const void *payload, size_t len) {
     return ESP_OK;
 }
 
-void udp_client_task(void *pvParameters)
+void remote_log_udp_client_task(void *pvParameters)
 {
     int addr_family = 0;
     int ip_protocol = 0;

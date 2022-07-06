@@ -54,7 +54,7 @@ void app_main(void)
         .data_log_cb = log_heap,
         .call_interval_multiplier = 10
     };
-    remote_log_register(new_log);
+    remote_log_register_log(new_log);
 }
 ```
 

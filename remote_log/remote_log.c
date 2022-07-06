@@ -124,6 +124,12 @@ esp_err_t remote_log_register_log(remote_log_register_t log)
     }
     log.called_counter = 0; // reset call counter
     log.total_times_called = 0;
+    if(log.call_interval_multiplier != 0) {
+        log.call_interval_counter = log.call_interval_multiplier;
+    }
+    else {
+        log.call_interval_counter = 0;
+    }
     remote_logs[active_logs++] = log;
     
     remote_log_t initial_log = {
@@ -176,6 +182,12 @@ esp_err_t remote_log_record_event(uint8_t event_id)
 static void call_registered_callbacks(void)
 {
     for(int i=0;i<active_logs;i++) {
+        // Check call interval counter
+        if( remote_logs[i].call_interval_counter != 0 ) {
+            remote_logs[i].call_interval_counter--;
+            continue;
+        }
+
         ESP_LOGD(TAG,"creating log #%d, id: %d",i,remote_logs[i].log_id);
 
         uint8_t logging_data[MAX_DATA_SIZE];
@@ -198,6 +210,7 @@ static void call_registered_callbacks(void)
         remote_log_send(&new_log);
 
         remote_logs[i].total_times_called++;
+        remote_logs[i].call_interval_counter = remote_logs[i].call_interval_multiplier;  // reset interval counter
 
         // if time, resend ID packet
         if(remote_logs[i].called_counter++ > ID_SEND_INTERVAL) {

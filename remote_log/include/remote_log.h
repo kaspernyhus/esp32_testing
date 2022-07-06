@@ -51,6 +51,8 @@ typedef struct {
   esp_err_t (*data_log_cb)(void *out_data, size_t *len);
   uint16_t called_counter;
   uint16_t total_times_called;
+  uint8_t call_interval_multiplier;
+  uint8_t call_interval_counter;
 } remote_log_register_t;
 
 typedef struct {

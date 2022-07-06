@@ -3,7 +3,7 @@
 #include "esp_log.h"
 
 
-static const char *UDP_TAG = "Remote Log";
+static const char *TAG = "Remote Log, udp";
 
 static int sock = 0;
 static struct sockaddr_in dest_addr;
@@ -19,13 +19,13 @@ void set_udp_ip_port(char *ip, uint32_t port)
 
 void get_udp_ip_port(void)
 {
-    ESP_LOGI(UDP_TAG,"IP: %s : %d", host_ip, host_port);
+    ESP_LOGI(TAG,"IP: %s : %d", host_ip, host_port);
 }
 
 esp_err_t udp_write(const void *payload, size_t len) {
     int err = sendto(sock, payload, len, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
     if (err < 0) {
-        ESP_LOGE(UDP_TAG, "Error occurred during sending: errno %d", errno);
+        ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
         return ESP_FAIL;
     }
     return ESP_OK;
@@ -46,25 +46,25 @@ void udp_client_task(void *pvParameters)
 
         sock = socket(addr_family, SOCK_DGRAM, ip_protocol);
         if (sock < 0) {
-            ESP_LOGE(UDP_TAG, "Unable to create socket: errno %d", errno);
+            ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
             break;
         }
         int ttl = 64;
         setsockopt(sock, ip_protocol, IP_TTL, &ttl, sizeof(ttl));
 
     
-        ESP_LOGI(UDP_TAG, "Socket created (%d), sending to %s:%d", sock, host_ip, host_port);
+        ESP_LOGI(TAG, "Socket created (%d), sending to %s:%d", sock, host_ip, host_port);
 
 
         while (1) {
             if(ulTaskNotifyTake(pdTRUE,portMAX_DELAY)) {
-                ESP_LOGE(UDP_TAG,"Error occurred in udp client task");
+                ESP_LOGE(TAG,"Error occurred in udp client task");
                 break;
             }
         }
 
         if (sock != -1) {
-            ESP_LOGE(UDP_TAG, "Shutting down socket and restarting...");
+            ESP_LOGE(TAG, "Shutting down socket and restarting...");
             shutdown(sock, 0);
             close(sock);
         }

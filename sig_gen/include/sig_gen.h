@@ -18,6 +18,16 @@ typedef enum {
     SIG_GEN_BE
 } endianess_t;
 
+typedef enum {
+    SIG_GEN_16BIT = 2,
+    SIG_GEN_24BIT = 3
+} bytes_per_sample_t;
+
+typedef enum {
+    SIG_GEN_NO_CB = 0,
+    SIG_GEN_ENABLE_CB = 1
+} callback_enable_t;
+
 
 typedef struct {
     gen_source_e gen_source;    // Signal source: LUT or CALCulation 
@@ -35,6 +45,8 @@ typedef struct {
     double _phase;
     double _double_pi;
 
+    callback_enable_t cb_enabled;
+    
     uint8_t initialized;
 } sig_gen_t;
 
@@ -48,6 +60,8 @@ typedef struct {
     double amplitude;
     double freq;
     double phase;
+    callback_enable_t enable_cb;
+    uint16_t cb_interval;
 } sig_gen_config_t;
 
 
@@ -55,5 +69,5 @@ void sig_gen_init(sig_gen_t *sg, const sig_gen_config_t *cfg);
 size_t sig_gen_output( sig_gen_t *sg, uint8_t *out_data, size_t samples);
 size_t sig_gen_output_combine(sig_gen_t *sg_l, sig_gen_t *sg_r, uint8_t *out_data, size_t samples);
 
-// uint32_t _sig_gen_get_sample(sig_gen_t *sg);
-
+void sig_gen_ez_1k_stereo_init(uint16_t sample_rate, bytes_per_sample_t bits, callback_enable_t cb_enable, uint16_t cb_interval_ms);
+void sig_gen_ez_read(uint8_t *out_data, size_t samples, size_t *bytes_read);

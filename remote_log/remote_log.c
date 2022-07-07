@@ -246,6 +246,6 @@ static void check_for_new_events(void) {
         };
 
         remote_log_send(&log);
-        ESP_LOGI(TAG,"Event id %d send @%d", event.event_id, event.timestamp);
+        ESP_LOGD(TAG,"Event id %d send @%d", event.event_id, event.timestamp);
     }
 }

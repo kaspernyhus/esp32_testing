@@ -10,7 +10,7 @@
 #define MAX_DATA_SIZE 100
 #define MAX_LOG_SIZE 150
 
-#define ID_SEND_INTERVAL 1000
+#define ID_SEND_INTERVAL 100
 #define EVENT_QUEUE_SZ 30
 
 
@@ -49,7 +49,7 @@ typedef struct {
 
 typedef struct {
   uint8_t log_id;
-  char tag[20];
+  char tag[30];
   esp_err_t (*data_log_cb)(void *out_data, size_t *len);
   uint16_t called_counter;
   uint16_t total_times_called;
@@ -59,7 +59,7 @@ typedef struct {
 
 typedef struct {
   uint8_t event_id;
-  char tag[20];
+  char tag[30];
   uint16_t called_counter;
   uint16_t total_times_called;
 } remote_log_event_register_t;

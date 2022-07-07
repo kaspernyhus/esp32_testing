@@ -51,7 +51,7 @@ typedef struct {
   uint8_t log_id;
   char tag[30];
   esp_err_t (*data_log_cb)(void *out_data, size_t *len);
-  uint16_t called_counter;
+  uint16_t call_counter;
   uint16_t total_times_called;
   uint8_t call_interval_multiplier;
   uint8_t call_interval_counter;
@@ -60,7 +60,7 @@ typedef struct {
 typedef struct {
   uint8_t event_id;
   char tag[30];
-  uint16_t called_counter;
+  uint16_t call_counter;
   uint16_t total_times_called;
 } remote_log_event_register_t;
 

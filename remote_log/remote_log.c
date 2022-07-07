@@ -122,7 +122,7 @@ esp_err_t remote_log_register_log(remote_log_register_t log)
         ESP_LOGE(TAG,"Can't register more logs - too many");
         return ESP_FAIL;
     }
-    log.called_counter = 0; // reset call counter
+    log.call_counter = 0;
     log.total_times_called = 0;
     if(log.call_interval_multiplier != 0) {
         log.call_interval_counter = log.call_interval_multiplier;
@@ -158,7 +158,7 @@ esp_err_t remote_log_register_event(remote_log_event_register_t event)
         return ESP_FAIL;
     }
 
-    event.called_counter = 0; // reset call counter
+    event.call_counter = 0; // reset call counter
     event.total_times_called = 0;
     remote_events[event.event_id] = event;
 
@@ -182,6 +182,21 @@ esp_err_t remote_log_record_event(uint8_t event_id)
 static void call_registered_callbacks(void)
 {
     for(int i=0;i<active_logs;i++) {
+        
+        // if time, resend ID packet
+        if(remote_logs[i].call_counter++ > ID_SEND_INTERVAL) {
+            remote_logs[i].call_counter = 0;
+            remote_log_t id_log = {
+                .log_type = REMOTE_LOG_ID,
+                .log_id = remote_logs[i].log_id,
+                .timestamp = 0,
+                .log_data_len = 30,
+                .log_data = (uint8_t*)remote_logs[i].tag,
+                .total_len = 9 + 30
+            };
+            remote_log_send(&id_log);
+        }
+
         // Check call interval counter
         if( remote_logs[i].call_interval_counter != 0 ) {
             remote_logs[i].call_interval_counter--;
@@ -211,20 +226,6 @@ static void call_registered_callbacks(void)
 
         remote_logs[i].total_times_called++;
         remote_logs[i].call_interval_counter = remote_logs[i].call_interval_multiplier;  // reset interval counter
-
-        // if time, resend ID packet
-        if(remote_logs[i].called_counter++ > ID_SEND_INTERVAL) {
-            remote_logs[i].called_counter = 0;
-            remote_log_t id_log = {
-                .log_type = REMOTE_LOG_ID,
-                .log_id = remote_logs[i].log_id,
-                .timestamp = timestamp,
-                .log_data_len = 20,
-                .log_data = (uint8_t*)remote_logs[i].tag,
-                .total_len = 9 + 20
-            };
-            remote_log_send(&id_log);
-        }
     }
 }
 
@@ -240,9 +241,9 @@ static void check_for_new_events(void) {
             .log_type = REMOTE_LOG_EVENT,
             .log_id = remote_events[event.event_id].event_id,
             .timestamp = event.timestamp,
-            .log_data_len = 20,
+            .log_data_len = 30,
             .log_data = (uint8_t*)remote_events[event.event_id].tag,
-            .total_len = 9 + 20
+            .total_len = 9 + 30
         };
 
         remote_log_send(&log);
